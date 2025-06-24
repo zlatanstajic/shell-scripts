@@ -5,7 +5,7 @@
 # Description : Switch main version of PHP on OS
 # Parameters  : php-version
 # Author      : Zlatan Stajic <contact@zlatanstajic.com>
-# Licence     : MIT
+# License     : MIT
 ################################################################################
 
 ################################################################################
