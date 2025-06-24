@@ -5,7 +5,7 @@
 # Description : Synchronize forked git repository
 # Parameters  : [branch-name] [folder-location] [remote-upstream]
 # Author      : Zlatan Stajic <contact@zlatanstajic.com>
-# Licence     : MIT
+# License     : MIT
 ################################################################################
 
 ################################################################################

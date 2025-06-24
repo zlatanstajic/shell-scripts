@@ -5,7 +5,7 @@
 # Description : Generate strong and secure password
 # Parameters  : /
 # Author      : Zlatan Stajic <contact@zlatanstajic.com>
-# Licence     : MIT
+# License     : MIT
 ################################################################################
 
 ################################################################################
