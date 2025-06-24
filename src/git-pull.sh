@@ -5,7 +5,7 @@
 # Description : Run git pull on all repos from directory
 # Parameters  : /
 # Author      : Zlatan Stajic <contact@zlatanstajic.com>
-# Licence     : MIT
+# License     : MIT
 ################################################################################
 
 ################################################################################

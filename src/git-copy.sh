@@ -5,7 +5,7 @@
 # Description : Copy all differences between two git commits
 # Parameters  : start-commit end-commit target-directory
 # Author      : Zlatan Stajic <contact@zlatanstajic.com>
-# Licence     : MIT
+# License     : MIT
 ################################################################################
 
 ################################################################################
