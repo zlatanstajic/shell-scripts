@@ -1,0 +1,44 @@
+#!/bin/bash
+
+################################################################################
+# Script name : .githooks/pre-commit
+# Description : Git pre-commit hook. Runs the test suite (hard gate) and
+#               shellcheck (advisory) before allowing a commit. Mirrors the
+#               GitHub Actions CI workflow so failures surface locally first.
+#               Enable per clone with: git config core.hooksPath .githooks
+# Author      : Zlatan Stajic <contact@zlatanstajic.com>
+# License     : MIT
+################################################################################
+
+set -u
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT" || exit 1
+
+# Hard gate: tests must pass.
+echo "pre-commit: running tests"
+if ! bash tests/run.sh
+then
+  echo "pre-commit: tests FAILED - commit aborted" >&2
+  exit 1
+fi
+
+# Advisory: generated flags/usage reference drift. Warn, never block (until
+# determinism is proven host-independent and the gate is promoted).
+echo "pre-commit: checking generated docs reference (advisory)"
+bash src/scripts/gen-docs.sh --check || \
+  echo "pre-commit: generated docs out of date - run bash src/scripts/gen-docs.sh (not blocking)" >&2
+
+# Advisory: lint not enforced (see CLAUDE.md). Warn, never block.
+if command -v shellcheck >/dev/null 2>&1
+then
+  echo "pre-commit: running shellcheck (advisory)"
+  shellcheck src/scripts/*.sh src/lib/common.sh install.sh uninstall.sh || \
+    echo "pre-commit: shellcheck warnings above (not blocking)" >&2
+else
+  echo "pre-commit: shellcheck not installed - skipping lint"
+fi
+
+exit 0
+
+################################################################################

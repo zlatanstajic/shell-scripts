@@ -1,0 +1,3 @@
+# Scripts source siblings by relative path and an optional runtime .env that is
+# absent at lint time; shellcheck cannot follow either. Both are intentional.
+disable=SC1091

@@ -1,48 +1,50 @@
 # Shell Scripts
 
-> Custom Unix shell scripts for file manipulation, program execution, and printing text.
+[![CI](https://github.com/zlatanstajic/shell-scripts/actions/workflows/ci.yml/badge.svg)](https://github.com/zlatanstajic/shell-scripts/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue.svg)](https://zlatanstajic.github.io/shell-scripts/)
+[![Made with Bash](https://img.shields.io/badge/Made%20with-Bash-1f425f.svg?logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
+[![Shellcheck](https://img.shields.io/badge/linted%20with-shellcheck-brightgreen.svg)](https://www.shellcheck.net/)
+
+> Custom Unix shell scripts for git development setup, PHP version switching, password generation, machine backups, restoring a project's `.vscode` folder, hashing filenames, copying a git diff between commits, and splicing images and videos.
+
+📖 **Browse the docs:** [zlatanstajic.github.io/shell-scripts](https://zlatanstajic.github.io/shell-scripts/) (source in [`docs/`](docs/), published via GitHub Pages).
 
 ## Table of Contents
 
-- [How to Use](#how-to-use)
+- [Install](#install)
 - [List of Available Scripts](#list-of-available-scripts)
-  - [Dev Setup](#dev-setup)
-  - [PHP Switch](#php-switch)
-  - [Generate Password](#generate-password)
-  - [Git](#git)
-    - [Git Copy](#git-copy)
-    - [Git Sync](#git-sync)
-    - [Git Pull](#git-pull)
-- [Recommendations](#recommendations)
+- [Testing](#testing)
+- [Continuous Integration](#continuous-integration)
 - [Contributing](#contributing)
 - [License](#license)
 
 ---
 
-## How to Use
+## Install
 
-Clone this repository to your local machine and navigate to the `src` directory. Mirror the `src` directory to a new folder named `deploy/versions/[current-version]`, where `[current-version]` is the version of the scripts you are using (e.g., `1.0.0`).
-
-```bash
-cp -R src/ deploy/versions/[current-version]
-```
-
-It is recommended to keep the name `deploy` for this copy, as it is ignored by [.gitignore](.gitignore).
-This allows you to `git pull` the latest version of this repository without overwriting your custom script updates.
-
-Navigate to the mirrored folder and edit scripts as needed:
+Make every script a first-class command on your `PATH` with one command. From the repository root:
 
 ```bash
-cd deploy/versions/[current-version]
-ls -al *.sh
-nano [script-name].sh
+bash install.sh
 ```
 
-After editing, save the script and run it:
+This symlinks each script in `src/scripts/` into `~/.local/bin` under its bare name (the `.sh` is stripped), so `generate-password -l 20`, `dev-setup -nu 1 -na "..."`, `backup`, and the rest run directly. The maintainer-only `gen-docs.sh` is intentionally not installed.
+
+- **Custom location:** `bash install.sh --prefix ~/bin` installs into `~/bin` instead.
+- **Idempotent:** re-running is safe — existing links are re-pointed (handy if you move the clone) and unrelated files in the prefix are never clobbered.
+- **PATH warning:** if the prefix is not on your `PATH`, the installer prints (but does not fail on) the exact `export PATH="..."` line to add to your shell rc.
+- **Completion:** a bash completion file for the command names is installed into your user bash-completion directory when bash completion is available; otherwise the installer prints a `source` line you can add to `~/.bashrc`.
+
+The symlinks resolve back into the clone (`readlink -f` dereferences them), so the clone must stay where it is, and `src/lib/` must remain beside `src/scripts/`. If you move the clone, re-run `bash install.sh` to re-point the links.
+
+Remove the installed commands at any time:
 
 ```bash
-bash [script-name].sh
+bash uninstall.sh            # or: bash uninstall.sh --prefix ~/bin
 ```
+
+`uninstall.sh` removes only the symlinks that point into this repo's `src/scripts/`, leaving any other files in the prefix untouched.
 
 [⬆ back to top](#table-of-contents)
 
@@ -52,126 +54,243 @@ bash [script-name].sh
 
 This is a list of available scripts you may use on any Unix-like system.
 
-### Dev Setup
+<!-- BEGIN GENERATED: command-reference -->
 
-- **File:** [`dev-setup.sh`](src/dev-setup.sh)
-- **Parameters:** `issue-number` `issue-name`
-- **Description:** Development setup for git repositories.
+<details markdown="1">
+<summary><strong>Backup</strong> — <code>src/scripts/backup.sh</code></summary>
 
-If you're using this shell script to set up development for a git repository, you're ready to go by default. You can change several parameters based on personal or team preferences.
+```text
+Running backup.sh
+Description: Backup documents on Linux machine
 
-1. Each branch will have a prefix, which is, by default, *issues*. To change this prefix, update the `BRANCH_PREFIX` variable.
-2. Upon completion, the script will offer helper text to copy/paste into your issue tracking software. The `REQUEST_PREFIX` is used as a prefix for pull request titles, and `ISSUE_BASE_PATH` can be set for pull request descriptions. These helper texts do not affect script execution.
+Show this help  : backup.sh -h
+Run this script : backup.sh
+Preview only    : backup.sh -n
 
-```bash
-# Show help
-bash dev-setup.sh -h
+  -h, --help     Show this help and exit
+  -n, --dry-run  Print intended changes; make no filesystem change
+  -y, --yes      Skip the confirmation prompt before mutating
 
-# Set up development for issue #1 "Example issue name"
-bash dev-setup.sh 1 "Example issue name"
+Configuration is read from <repo-root>/.env (see .env.example).
+BACKUP_LOCATION is required; per-section variables are optional.
 ```
 
-[⬆ back to top](#table-of-contents)
+</details>
 
-### PHP Switch
+<details markdown="1">
+<summary><strong>Dev Setup</strong> — <code>src/scripts/dev-setup.sh</code></summary>
 
-- **File:** [`php-switch.sh`](src/php-switch.sh)
-- **Parameters:** `php-version`
-- **Description:** Switch the main version of PHP on your OS.
+```text
+Running dev-setup.sh
+Description: Development setup for git
 
-Update the `PHP_VERSIONS_INSTALLED` array in the script to match the PHP versions installed on your system.
+Show this help  : dev-setup.sh -h
+Run this script : dev-setup.sh -nu 1 -na "Example issue name"
 
-```bash
-# Show help
-bash php-switch.sh -h
-
-# Switch to PHP version 8.1
-bash php-switch.sh 8.1
+  -nu, --number   Issue number (required)
+  -na, --name     Issue name (required)
 ```
 
-[⬆ back to top](#table-of-contents)
+</details>
 
-### Generate Password
+<details markdown="1">
+<summary><strong>Generate Password</strong> — <code>src/scripts/generate-password.sh</code></summary>
 
-- **File:** [`generate-password.sh`](src/generate-password.sh)
-- **Parameters:** None
-- **Description:** Generate strong and secure password
+```text
+Running generate-password.sh
+Description: Generate strong and secure password
+Minimum length is 8 and must be divisible by 4.
 
-```bash
-# Show help
-bash generate-password.sh -h
-
-# How to generate password
-bash generate-password.sh
+Show this help    : generate-password.sh -h
+Generate password : generate-password.sh -l 20
 ```
 
-[⬆ back to top](#table-of-contents)
+</details>
 
-### Git
+<details markdown="1">
+<summary><strong>Git Copy</strong> — <code>src/scripts/git-copy.sh</code></summary>
 
-#### Git Copy
+```text
+Running git-copy.sh
+Description: Copy all differences between two git commits
 
-- **File:** [`git-copy.sh`](src/git-copy.sh)
-- **Parameters:** `start-commit` `end-commit` `target-directory`
-- **Description:** Copy all differences between two git commits
+Show this help  : git-copy.sh -h
+Run this script : git-copy.sh
 
-```bash
-# Show help
-bash git-copy.sh -h
+  -s, --start_commit_hash      Start commit hash (optional)
+  -e, --end_commit_hash        End commit hash (optional)
+  -t, --target_directory_path  Target directory path (optional)
 
-# Copy all differences between start and end git commit to target directory
-bash git-copy.sh [start-commit] [end-commit] [target-directory]
+Defaults are computed at runtime: start is the penultimate commit,
+end is the last commit. When -t is omitted the target defaults to
+$GIT_COPY_TARGET_DIRECTORY_PATH/<repo-basename> (see .env.example);
+when -t is given its value is used verbatim.
 ```
 
-[⬆ back to top](#table-of-contents)
+</details>
 
-#### Git Sync
+<details markdown="1">
+<summary><strong>Hash Filenames</strong> — <code>src/scripts/hash-filenames.sh</code></summary>
 
-- **File:** [`git-sync.sh`](src/git-sync.sh)
-- **Parameters:** `[branch-name]` `[folder-location]` `[remote-upstream]`
-- **Description:** Synchronize forked git repository
+```text
+Running hash-filenames.sh
+Description: Renames files in a directory to random hash names
 
-```bash
-# Show help
-bash git-sync.sh -h
+Show this help   : hash-filenames.sh -h
+Hash a directory : hash-filenames.sh -d /path/to/dir
+Verbose output   : hash-filenames.sh -d /path/to/dir -v
+Move into batches: hash-filenames.sh -d /path/to/dir -m
+Preview only     : hash-filenames.sh -d /path/to/dir -n
 
-# Sync with remote repo (doing this only once per forked repo)
-bash git-sync.sh [branch-name] [full-forked-repo-folder-path] [full-remote-repo-path]
+  -h, --help       Show this help and exit
+  -d, --directory  Directory to process (defaults to current directory)
+  -v, --verbose    Enable verbose output
+  -m, --move       Move hashed files into hashed_00X folders
+  -n, --dry-run    Print intended changes; make no filesystem change
+  -y, --yes        Skip the confirmation prompt before mutating
 
-# Sync with remote repo (when branch is master, remote upstream has been added and current directory chosen)
-bash [path-to-the-shell-script]/git-sync.sh
+Target extensions are read from HASH_FILENAMES_FILE_EXTENSIONS in
+<repo-root>/.env (see .env.example).
 ```
 
-[⬆ back to top](#table-of-contents)
+</details>
 
-#### Git Pull
+<details markdown="1">
+<summary><strong>PHP Switch</strong> — <code>src/scripts/php-switch.sh</code></summary>
 
-- **File:** [`git-pull.sh`](src/git-pull.sh)
-- **Parameters:** None
-- **Description:** Run git pull on all repos from directory
+```text
+Running php-switch.sh
+Description: Switch main version of PHP on OS
 
-```bash
-# Show help
-bash [path-to-the-shell-script]/git-pull.sh -h
-
-# When navigated to the root folder where all repos are located
-bash [path-to-the-shell-script]/git-pull.sh
+Show this help : php-switch.sh -h
+Switch version : php-switch.sh -v 8.1
+Interactive    : php-switch.sh
 ```
+
+</details>
+
+<details markdown="1">
+<summary><strong>Restore VSCode Folder</strong> — <code>src/scripts/restore-vscode-folder.sh</code></summary>
+
+```text
+Running restore-vscode-folder.sh
+Description: Restore the .vscode folder from backup into the current
+directory (only when it has no .vscode yet).
+
+Show this help  : restore-vscode-folder.sh -h
+Run this script : restore-vscode-folder.sh
+
+Configuration is read from <repo-root>/.env (see .env.example).
+Reuses BACKUP_LOCATION and PROJECTS_DESTINATION_FOLDER_NAME; both are
+required. Restores from <BACKUP_LOCATION>/
+<PROJECTS_DESTINATION_FOLDER_NAME>/<current-dir-basename>/.vscode.
+```
+
+</details>
+
+<details markdown="1">
+<summary><strong>Splice Images</strong> — <code>src/scripts/splice-images.sh</code></summary>
+
+```text
+Running splice-images.sh
+Description: Splices images horizontally using ffmpeg
+
+Show this help    : splice-images.sh -h
+Splice given imgs : splice-images.sh -i a.jpg b.jpg
+Splice 3 images   : splice-images.sh -i a.jpg b.jpg c.jpg -n 3
+Random 2 from cwd : splice-images.sh
+Fixed scale height: splice-images.sh -i a.jpg b.jpg --height 200
+
+  -h, --help     Show this help and exit
+  -i, --images   One or more input image files
+  -o, --output   Output filename (only its extension is used)
+      --height   Target scale height (default: auto from first image)
+  -n, --number   Number of images to splice (default: 2)
+      --dry-run  Print intended changes; make no filesystem change
+                 (long form only; -n stays bound to --number)
+
+Valid extensions are read from SPLICE_IMAGES_FILE_EXTENSIONS in
+<repo-root>/.env (see .env.example).
+```
+
+</details>
+
+<details markdown="1">
+<summary><strong>Splice Videos</strong> — <code>src/scripts/splice-videos.sh</code></summary>
+
+```text
+Running splice-videos.sh
+Description: Splices random clips of a video into one output video
+
+Show this help    : splice-videos.sh -h
+Splice 12s output : splice-videos.sh -i clip.mp4 -d 12
+Custom segment    : splice-videos.sh -i clip.mp4 -d 12 -s 4
+Preview only      : splice-videos.sh -i clip.mp4 -d 12 -n
+
+  -h, --help       Show this help and exit
+  -i, --input      Input video file (Required)
+  -d, --duration   Output video duration in seconds (Required)
+  -s, --segment    Random clip duration in seconds (default: 3)
+  -n, --dry-run    Print intended changes; make no filesystem change
+  -y, --yes        Skip the confirmation prompt before mutating
+
+Valid extensions are read from SPLICE_VIDEOS_FILE_EXTENSIONS in
+<repo-root>/.env (see .env.example).
+```
+
+</details>
+<!-- END GENERATED: command-reference -->
 
 [⬆ back to top](#table-of-contents)
 
 ---
 
-## Recommendations
+## Testing
 
-You can create an alias for a script:
+The repository ships a zero-dependency, pure-bash test harness under [`tests/`](tests/) — no `bats`, `shunit2`, or any other framework required.
 
 ```bash
-alias [alias-name]="[command]"
-[alias-name] -h
+# Run the whole suite
+bash tests/run.sh
+
+# Run a single test file
+bash tests/run.sh tests/test_common.sh
 ```
 
-Replace `[alias-name]` with your chosen alias and `[command]` with the full path to your script (e.g., `[installation-path]/shell-scripts/deploy/versions/[current-version]/[script-name].sh`).
+Layout: shared-library tests live at the `tests/` root; per-script tests live under [`tests/scripts/`](tests/scripts/). The runner discovers every `test_*.sh` under `tests/` recursively.
+
+The runner prints a ✓/✗ line per assertion and exits non-zero if any assertion fails, so it doubles as a CI gate.
+
+- [`tests/run.sh`](tests/run.sh) — discovers and sources every `tests/test_*.sh` file, then prints a summary.
+- [`tests/lib/assert.sh`](tests/lib/assert.sh) — assertion helpers (`assert_eq`, `assert_contains`, `assert_match`, `assert_exit`) and the shared `TESTS_RUN`/`TESTS_FAILED` counters plus a resolved `REPO_ROOT`.
+- [`tests/test_common.sh`](tests/test_common.sh) — unit tests for the shared library [`src/lib/common.sh`](src/lib/common.sh) (`UrlEncode`, the `Log*`/`EchoBold` helpers, and `End`/`MissingRequiredArguments` exit codes, the last run in subshells because they call `exit`).
+- [`tests/scripts/test_generate_password.sh`](tests/scripts/test_generate_password.sh) — behavioural tests that drive [`generate-password.sh`](src/scripts/generate-password.sh) as a subprocess (help text, argument and length validation, output length, character-class coverage).
+
+To add tests for another script, drop a `tests/scripts/test_<name>.sh` file: use `$REPO_ROOT` for paths, run `exit`-calling code through `assert_exit` in a subshell, and assert whole-script behaviour by running it with `bash "$SCRIPT"` and checking the exit code plus the captured `$ASSERT_OUTPUT`. Capture script output via a temp file rather than a pipe — `generate-password.sh` can leave a `tr < /dev/urandom` reader holding a pipe open, which hangs `| sed` / `$()` readers on EOF.
+
+[⬆ back to top](#table-of-contents)
+
+---
+
+## Continuous Integration
+
+Every push to `master` and every pull request runs the test suite (and an advisory `shellcheck` lint) via GitHub Actions — see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+### Pre-commit hook
+
+Run the same checks locally before each commit using a native git hook (no `husky`, `npm`, or other dependency). The hook lives in the repository at [`.githooks/pre-commit`](.githooks/pre-commit): it runs the test suite as a hard gate and `shellcheck` as an advisory step, mirroring CI so failures surface before you push.
+
+Git does not enable repository hooks automatically on clone, so enable them once per clone by pointing git at the versioned hooks directory:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+From then on the hook runs automatically on every `git commit`. A failing test aborts the commit; a missing `shellcheck` is skipped (lint is advisory). Bypass the hook for a single commit with:
+
+```bash
+git commit --no-verify
+```
 
 [⬆ back to top](#table-of-contents)
 
@@ -179,7 +298,7 @@ Replace `[alias-name]` with your chosen alias and `[command]` with the full path
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose a change.
 
 [⬆ back to top](#table-of-contents)
 
@@ -187,6 +306,6 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for details.
 
 [⬆ back to top](#table-of-contents)

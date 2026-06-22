@@ -2,3 +2,10 @@
 
 .vscode/
 deploy/
+.env
+
+# Jekyll docs build artifacts (docs/ is the GitHub Pages source)
+docs/_site/
+docs/.jekyll-cache/
+docs/vendor/
+docs/Gemfile.lock

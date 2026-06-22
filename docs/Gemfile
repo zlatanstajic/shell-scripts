@@ -1,0 +1,6 @@
+source "https://rubygems.org"
+
+# Local preview only. GitHub Pages builds the site natively; this Gemfile lets
+# you run `bundle exec jekyll serve` from the docs/ directory.
+gem "github-pages", group: :jekyll_plugins
+gem "jekyll-remote-theme"

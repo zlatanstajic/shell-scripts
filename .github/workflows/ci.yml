@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [master, rework]
+  pull_request:
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    # Advisory: lint not enforced (see CLAUDE.md). Surfaces warnings without
+    # blocking the build. Flip to a hard gate once scripts are warning-clean.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Lint scripts
+        run: shellcheck src/scripts/*.sh src/lib/common.sh install.sh uninstall.sh
+
+  docs:
+    name: Docs reference
+    runs-on: ubuntu-latest
+    # Advisory: surfaces flags/usage-reference drift without blocking the build
+    # while determinism is proven on the runner. Promote to a hard gate later.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check generated reference is up to date
+        run: bash src/scripts/gen-docs.sh --check
+
+  tests:
+    name: Test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Run tests
+        run: bash tests/run.sh
