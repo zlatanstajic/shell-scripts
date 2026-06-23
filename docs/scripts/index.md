@@ -21,3 +21,4 @@ parameters, usage examples, and `.env` keys.
 | [Git Copy]({{ site.baseurl }}/scripts/git-copy/) | Copy the diff between two git commits, then zip it |
 | [Splice Images]({{ site.baseurl }}/scripts/splice-images/) | Splice 2+ images horizontally via ffmpeg |
 | [Splice Videos]({{ site.baseurl }}/scripts/splice-videos/) | Splice random clips of one video into a target-length output via ffmpeg |
+| [Tampermonkey Install]({{ site.baseurl }}/scripts/tampermonkey-install/) | Build a GitHub userscript URL and open it for Tampermonkey |

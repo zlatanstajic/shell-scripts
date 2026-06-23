@@ -10,11 +10,12 @@
 # License     : MIT
 ################################################################################
 
-# A single complete -W line over all 9 names exceeds 80 cols, so build the list
+# A single complete -W line over all 11 names exceeds 80 cols, so build the list
 # across wrapped assignments, then register each name.
-_ssc_names="backup dev-setup generate-password git-copy"
-_ssc_names="$_ssc_names hash-filenames php-switch restore-vscode-folder"
-_ssc_names="$_ssc_names splice-images splice-videos"
+_ssc_names="backup decrypt-env-files dev-setup generate-password"
+_ssc_names="$_ssc_names git-copy hash-filenames php-switch"
+_ssc_names="$_ssc_names restore-vscode-folder splice-images splice-videos"
+_ssc_names="$_ssc_names tampermonkey-install"
 
 for _ssc in $_ssc_names; do
   complete -W "" "$_ssc"

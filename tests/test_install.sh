@@ -1,7 +1,7 @@
 ################################################################################
 # Test file   : tests/test_install.sh
 # Description : Tests for install.sh / uninstall.sh: the bare-name -> command
-#               mapping and 9-script count, the -h self-test (catches an
+#               mapping and 11-script count, the -h self-test (catches an
 #               unset-SCRIPT_NAME abort from a misordered common.sh source),
 #               install into a temp prefix with symlink-target assertions, an
 #               EXECUTABLE bare-path invocation (the assertion that catches the
@@ -20,6 +20,7 @@ COMPLETION_FILE="$REPO_ROOT/src/completion/shell-scripts.bash"
 # user-facing set is every src/scripts/*.sh except gen-docs.sh.
 EXPECTED_NAMES=(
   "backup"
+  "decrypt-env-files"
   "dev-setup"
   "generate-password"
   "git-copy"
@@ -28,6 +29,7 @@ EXPECTED_NAMES=(
   "restore-vscode-folder"
   "splice-images"
   "splice-videos"
+  "tampermonkey-install"
 )
 
 # --- Name mapping + count -----------------------------------------------------
@@ -42,11 +44,11 @@ do
 done
 unset _f _base
 
-assert_eq "9" "${#ACTUAL_NAMES[@]}" \
-  "exactly 9 user-facing scripts in src/scripts/ (gen-docs.sh excluded)"
+assert_eq "11" "${#ACTUAL_NAMES[@]}" \
+  "exactly 11 user-facing scripts in src/scripts/ (gen-docs.sh excluded)"
 
 assert_eq "${EXPECTED_NAMES[*]}" "${ACTUAL_NAMES[*]}" \
-  "src/scripts/*.sh maps to the expected 9 bare command names"
+  "src/scripts/*.sh maps to the expected 11 bare command names"
 
 # basename "<file>" .sh strips the .sh extension for every expected mapping.
 for _name in "${EXPECTED_NAMES[@]}"
@@ -73,7 +75,7 @@ TMP_PREFIX="$(mktemp -d)"
 assert_exit 0 "install.sh installs into a temp prefix" -- \
   bash "$INSTALL" --prefix "$TMP_PREFIX"
 
-# All 9 commands exist as symlinks resolving into src/scripts/.
+# All 10 commands exist as symlinks resolving into src/scripts/.
 _src_real="$(readlink -f "$SCRIPTS_DIR")"
 for _name in "${EXPECTED_NAMES[@]}"
 do
@@ -96,7 +98,7 @@ assert_exit 0 "bare-name generate-password runs as an executable" -- \
 assert_match "$ASSERT_OUTPUT" '[^[:space:]]{16}' \
   "bare-name generate-password emits a 16-char password line"
 
-# Re-run install: idempotent, still exactly 9 symlinks, exit 0.
+# Re-run install: idempotent, still exactly 10 symlinks, exit 0.
 assert_exit 0 "re-running install.sh is idempotent" -- \
   bash "$INSTALL" --prefix "$TMP_PREFIX"
 
@@ -105,7 +107,7 @@ for _name in "${EXPECTED_NAMES[@]}"
 do
   [ -L "$TMP_PREFIX/$_name" ] && _link_count=$((_link_count + 1))
 done
-assert_eq "9" "$_link_count" "still exactly 9 symlinks after a re-run"
+assert_eq "11" "$_link_count" "still exactly 11 symlinks after a re-run"
 unset _name _link_count
 
 # --- Uninstall cleanup --------------------------------------------------------
@@ -121,7 +123,7 @@ for _name in "${EXPECTED_NAMES[@]}"
 do
   [ -e "$TMP_PREFIX/$_name" ] && _remaining=$((_remaining + 1))
 done
-assert_eq "0" "$_remaining" "all 9 symlinks removed after uninstall"
+assert_eq "0" "$_remaining" "all 11 symlinks removed after uninstall"
 unset _name _remaining
 
 if [ -e "$TMP_PREFIX/backup-decoy" ]
@@ -136,7 +138,7 @@ unset TMP_PREFIX
 
 # --- Completion drift guard ---------------------------------------------------
 
-# The bash completion file must list exactly the 9 user-facing command names.
+# The bash completion file must list exactly the 10 user-facing command names.
 # Extract the names from the _ssc_names assignment lines (strip the assignment
 # scaffolding and the self-referential $_ssc_names token).
 COMPLETION_LIST="$(
@@ -154,7 +156,7 @@ EXPECTED_SORTED="$(printf '%s\n' "${EXPECTED_NAMES[@]}" | sort | \
   tr "\n" " " | sed 's/ *$//')"
 
 assert_eq "$EXPECTED_SORTED" "$COMPLETION_SORTED" \
-  "completion file lists exactly the 9 user-facing command names"
+  "completion file lists exactly the 11 user-facing command names"
 
 unset COMPLETION_LIST COMPLETION_SORTED EXPECTED_SORTED
 

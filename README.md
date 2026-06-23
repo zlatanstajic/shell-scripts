@@ -78,6 +78,28 @@ BACKUP_LOCATION is required; per-section variables are optional.
 </details>
 
 <details markdown="1">
+<summary><strong>Decrypt Env Files</strong> — <code>src/scripts/decrypt-env-files.sh</code></summary>
+
+```text
+Running decrypt-env-files.sh
+Description: Decrypt backed-up project env files (.env.enc/.env.rb.enc)
+
+Show this help  : decrypt-env-files.sh -h
+Run this script : decrypt-env-files.sh
+Preview only    : decrypt-env-files.sh -n
+
+  -h, --help     Show this help and exit
+  -n, --dry-run  Print intended changes; make no filesystem change
+  -y, --yes      Skip the confirmation prompt before mutating
+
+Configuration is read from <repo-root>/.env (see .env.example).
+BACKUP_LOCATION, PROJECTS_DESTINATION_FOLDER_NAME and
+ENV_FILES_PASSWORD are all required.
+```
+
+</details>
+
+<details markdown="1">
 <summary><strong>Dev Setup</strong> — <code>src/scripts/dev-setup.sh</code></summary>
 
 ```text
@@ -236,6 +258,30 @@ Preview only      : splice-videos.sh -i clip.mp4 -d 12 -n
 
 Valid extensions are read from SPLICE_VIDEOS_FILE_EXTENSIONS in
 <repo-root>/.env (see .env.example).
+```
+
+</details>
+
+<details markdown="1">
+<summary><strong>Tampermonkey Install</strong> — <code>src/scripts/tampermonkey-install.sh</code></summary>
+
+```text
+Running tampermonkey-install.sh
+Description: Build a GitHub userscript URL and open it for Tampermonkey
+
+Show this help  : tampermonkey-install.sh -h
+Run this script : tampermonkey-install.sh -d <domain> -s <script>
+
+  -d, --domain   Domain-name folder (required, e.g. youtube.com)
+  -s, --script   Script name, no extension (required, e.g. video-speed)
+  -r, --repo     Override the configured GitHub base URL (optional)
+  -h, --help     Show this help and exit
+
+Base URL(s) read from TAMPERMONKEY_REPO_BASE_URLS in
+<repo-root>/.env (see .env.example). A comma-separated list is
+probed with curl (redirects followed); the first URL answering
+HTTP 2xx is opened, else the first entry. Private GitHub repos
+need GH_TOKEN/GITHUB_TOKEN or 'gh' for the probe to see them.
 ```
 
 </details>

@@ -13,6 +13,7 @@ GENDOCS_SRC="$REPO_ROOT/src/scripts/gen-docs.sh"
 
 EXPECTED_SCRIPTS=(
   "Backup"
+  "Decrypt Env Files"
   "Dev Setup"
   "Generate Password"
   "Git Copy"
@@ -21,6 +22,7 @@ EXPECTED_SCRIPTS=(
   "Restore VSCode Folder"
   "Splice Images"
   "Splice Videos"
+  "Tampermonkey Install"
 )
 
 # new_sandbox: mirror src/ (scripts + lib travel together so `source` resolves),
@@ -110,8 +112,8 @@ OUT="$(run_gen "$SANDBOX")"; rm -f "$OUT"
 REF="$SANDBOX/docs/_includes/command-reference.md"
 REF_BODY="$(cat "$REF")"
 
-assert_eq 9 "$(grep -cF '<summary>' "$REF")" \
-  "rendered reference has exactly nine collapsible sections"
+assert_eq 11 "$(grep -cF '<summary>' "$REF")" \
+  "rendered reference has exactly eleven collapsible sections"
 for name in "${EXPECTED_SCRIPTS[@]}"
 do
   assert_contains "$REF_BODY" "<summary><strong>$name</strong>" \

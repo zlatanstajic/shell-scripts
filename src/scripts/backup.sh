@@ -22,7 +22,7 @@ set -u
 
 # Defaults (overridden by $PROJECT_ROOT/.env when present)
 BACKUP_LOCATION=""
-ENV_FILES_ZIP_PASSWORD="pa55"
+ENV_FILES_PASSWORD="pa55"
 # Documented .env keys, reserved for future system/vscode backups.
 # shellcheck disable=SC2034
 SYSTEM_DESTINATION_FOLDER_NAME=""
@@ -196,24 +196,27 @@ SudoRmtree()
 }
 
 ################################################################################
-# Function    : ComputeFileHash
-# Description : Computes the HMAC-SHA256 hex digest of a file. Echoes the hex on
-#               success; warns and returns non-zero when openssl is unavailable
-# Parameters  : file key
+# Function    : EncryptEnvFile
+# Description : Encrypts a file with AES-256-CBC (-pbkdf2) into dst using the
+#               given password. Dry-run aware via RunOrEcho; warns and returns
+#               non-zero when openssl is unavailable
+# Parameters  : src dst key
 ################################################################################
 
-ComputeFileHash()
+EncryptEnvFile()
 {
-  local file="$1"
-  local key="$2"
+  local src="$1"
+  local dst="$2"
+  local key="$3"
   if ! command -v openssl >/dev/null 2>&1
   then
-    LogWarn "openssl unavailable; cannot hash $file"
+    LogWarn "openssl unavailable; cannot encrypt $src"
     return 1
   fi
-  # openssl output: "HMAC-SHA256(file)= <hex>" or "SHA2-256(...)= <hex>";
-  # the hex digest is always the last whitespace-separated field.
-  openssl dgst -sha256 -hmac "$key" "$file" | awk '{print $NF}'
+  # Use env: to avoid exposing the key as a CLI argument (ps visibility).
+  local -x OPENSSL_ENC_PASS="$key"
+  RunOrEcho openssl enc -aes-256-cbc -pbkdf2 -in "$src" -out "$dst" \
+    -pass env:OPENSSL_ENC_PASS
 }
 
 ################################################################################
@@ -327,7 +330,6 @@ DoSimpleBackup()
     return 0
   fi
   local dest="$BACKUP_LOCATION/$dest_folder_name"
-  SudoRmtree "$dest"
   SudoMakedirs "$dest"
   local src
   for src in "${src_paths[@]}"
@@ -341,8 +343,8 @@ DoSimpleBackup()
 
 ################################################################################
 # Function    : DoProjectsBackup
-# Description : Backs up each project: .env/.env.rb hashed via HMAC-SHA256 with
-#               skip-if-unchanged, config.json copied, .vscode/ copied
+# Description : Backs up each project: .env/.env.rb encrypted via AES-256-CBC
+#               with skip-if-unchanged, config.json copied, .vscode/ copied
 # Parameters  : /
 ################################################################################
 
@@ -372,7 +374,7 @@ DoProjectsBackup()
   do
     local project_name
     project_name="$(GetProjectName "$project")"
-    # Env file (.env preferred, else .env.rb) backed up as <file>.hash
+    # Env file (.env preferred, else .env.rb) backed up as <file>.enc
     local env_file=""
     if [ -f "$project/.env" ]
     then
@@ -383,32 +385,20 @@ DoProjectsBackup()
     fi
     if [ -n "$env_file" ]
     then
-      local hash_dst="$projects_dir/$project_name/$env_file.hash"
-      SudoMakedirs "$(dirname "$hash_dst")"
-      local new_hash env_src="$project/$env_file"
-      if new_hash="$(ComputeFileHash "$env_src" "$ENV_FILES_ZIP_PASSWORD")"
+      local enc_dst="$projects_dir/$project_name/$env_file.enc"
+      local env_src="$project/$env_file"
+      # Skip when an up-to-date ciphertext already exists (source not newer).
+      if [ -f "$enc_dst" ] && [ ! "$env_src" -nt "$enc_dst" ]
       then
-        local existing_hash=""
-        if [ -f "$hash_dst" ]
+        LogInfo "Skipping $project $env_file: unchanged"
+      else
+        SudoMakedirs "$(dirname "$enc_dst")"
+        if EncryptEnvFile "$env_src" "$enc_dst" "$ENV_FILES_PASSWORD"
         then
-          existing_hash="$(cat "$hash_dst" 2>/dev/null)"
-        fi
-        if [ "$new_hash" = "$existing_hash" ]
-        then
-          LogInfo "Skipping $project $env_file: unchanged"
-        elif [ "$DRY_RUN" -eq 1 ]
-        then
-          # A redirect cannot be routed through RunOrEcho (the > binds to the
-          # outer command and would write), so branch explicitly here.
-          LogInfo "would write hash to $hash_dst"
-        elif echo "$new_hash" > "$hash_dst"
-        then
-          LogInfo "Backed up $project $env_file: hash updated"
+          LogInfo "Backed up $project $env_file: encrypted"
         else
           LogWarn "Unable to backup $project $env_file"
         fi
-      else
-        LogWarn "Unable to backup $project $env_file"
       fi
     fi
     # config.json copied verbatim when present
