@@ -6,7 +6,7 @@
 [![Made with Bash](https://img.shields.io/badge/Made%20with-Bash-1f425f.svg?logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![Shellcheck](https://img.shields.io/badge/linted%20with-shellcheck-brightgreen.svg)](https://www.shellcheck.net/)
 
-> Custom Unix shell scripts for git development setup, PHP version switching, password generation, machine backups, restoring a project's `.vscode` folder, hashing filenames, copying a git diff between commits, and splicing images and videos.
+> Custom Unix shell scripts for git development setup, PHP version switching, password generation, machine backups, restoring a project's `.vscode` folder, hashing filenames, copying a git diff between commits, splicing images and videos, and emailing rain alerts from the MET Norway forecast.
 
 📖 **Browse the docs:** [zlatanstajic.github.io/shell-scripts](https://zlatanstajic.github.io/shell-scripts/) (source in [`docs/`](docs/), published via GitHub Pages).
 
@@ -187,6 +187,37 @@ Description: Switch main version of PHP on OS
 Show this help : php-switch.sh -h
 Switch version : php-switch.sh -v 8.1
 Interactive    : php-switch.sh
+```
+
+</details>
+
+<details markdown="1">
+<summary><strong>Rain Alert</strong> — <code>src/scripts/rain-alert.sh</code></summary>
+
+```text
+Running rain-alert.sh
+Description: Email a rain alert when MET Norway forecasts rain for any
+             configured city within a lookahead window
+
+Show this help  : rain-alert.sh -h
+Run this script : rain-alert.sh
+Preview email   : rain-alert.sh -n
+Display only    : rain-alert.sh -d
+
+  -h, --help        Show this help and exit
+  -n, --dry-run     Print the email that WOULD be sent; send nothing
+  -d, --display     Print the forecast result to stdout and exit; send
+                    no email (needs no recipient or msmtp; ignores cache)
+
+Configuration is read from <repo-root>/.env (see .env.example).
+RAIN_ALERT_RECIPIENT is required. Cities are queried against the MET
+Norway Locationforecast 2.0 compact API; no rain anywhere => no email
+(cron-noise-free). A last-alert cache de-dupes unchanged forecasts.
+
+Mail is sent via msmtp (a hard dependency for a real send). Without
+msmtp you can pipe the composed message to curl instead, e.g.:
+  curl --ssl-reqd --mail-from you@example.com --mail-rcpt rcpt@x \
+    --upload-file msg.txt --user you@example.com:pass smtps://host:465
 ```
 
 </details>

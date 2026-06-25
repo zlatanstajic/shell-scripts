@@ -26,6 +26,7 @@ EXPECTED_NAMES=(
   "git-copy"
   "hash-filenames"
   "php-switch"
+  "rain-alert"
   "restore-vscode-folder"
   "splice-images"
   "splice-videos"
@@ -44,11 +45,11 @@ do
 done
 unset _f _base
 
-assert_eq "11" "${#ACTUAL_NAMES[@]}" \
-  "exactly 11 user-facing scripts in src/scripts/ (gen-docs.sh excluded)"
+assert_eq "12" "${#ACTUAL_NAMES[@]}" \
+  "exactly 12 user-facing scripts in src/scripts/ (gen-docs.sh excluded)"
 
 assert_eq "${EXPECTED_NAMES[*]}" "${ACTUAL_NAMES[*]}" \
-  "src/scripts/*.sh maps to the expected 11 bare command names"
+  "src/scripts/*.sh maps to the expected 12 bare command names"
 
 # basename "<file>" .sh strips the .sh extension for every expected mapping.
 for _name in "${EXPECTED_NAMES[@]}"
@@ -107,7 +108,7 @@ for _name in "${EXPECTED_NAMES[@]}"
 do
   [ -L "$TMP_PREFIX/$_name" ] && _link_count=$((_link_count + 1))
 done
-assert_eq "11" "$_link_count" "still exactly 11 symlinks after a re-run"
+assert_eq "12" "$_link_count" "still exactly 12 symlinks after a re-run"
 unset _name _link_count
 
 # --- Uninstall cleanup --------------------------------------------------------
@@ -123,7 +124,7 @@ for _name in "${EXPECTED_NAMES[@]}"
 do
   [ -e "$TMP_PREFIX/$_name" ] && _remaining=$((_remaining + 1))
 done
-assert_eq "0" "$_remaining" "all 11 symlinks removed after uninstall"
+assert_eq "0" "$_remaining" "all 12 symlinks removed after uninstall"
 unset _name _remaining
 
 if [ -e "$TMP_PREFIX/backup-decoy" ]
@@ -138,7 +139,7 @@ unset TMP_PREFIX
 
 # --- Completion drift guard ---------------------------------------------------
 
-# The bash completion file must list exactly the 10 user-facing command names.
+# The bash completion file must list exactly the user-facing command names.
 # Extract the names from the _ssc_names assignment lines (strip the assignment
 # scaffolding and the self-referential $_ssc_names token).
 COMPLETION_LIST="$(
@@ -156,7 +157,7 @@ EXPECTED_SORTED="$(printf '%s\n' "${EXPECTED_NAMES[@]}" | sort | \
   tr "\n" " " | sed 's/ *$//')"
 
 assert_eq "$EXPECTED_SORTED" "$COMPLETION_SORTED" \
-  "completion file lists exactly the 11 user-facing command names"
+  "completion file lists exactly the 12 user-facing command names"
 
 unset COMPLETION_LIST COMPLETION_SORTED EXPECTED_SORTED
 

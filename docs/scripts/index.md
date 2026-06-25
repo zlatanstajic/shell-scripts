@@ -22,3 +22,4 @@ parameters, usage examples, and `.env` keys.
 | [Splice Images]({{ site.baseurl }}/scripts/splice-images/) | Splice 2+ images horizontally via ffmpeg |
 | [Splice Videos]({{ site.baseurl }}/scripts/splice-videos/) | Splice random clips of one video into a target-length output via ffmpeg |
 | [Tampermonkey Install]({{ site.baseurl }}/scripts/tampermonkey-install/) | Build a GitHub userscript URL and open it for Tampermonkey |
+| [Rain Alert]({{ site.baseurl }}/scripts/rain-alert/) | Email a rain alert when MET Norway forecasts rain for a configured city |
