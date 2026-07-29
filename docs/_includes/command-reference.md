@@ -153,6 +153,42 @@ required. Restores from <BACKUP_LOCATION>/
 </details>
 
 <details markdown="1">
+<summary><strong>Shutdown Guard</strong> — <code>src/scripts/shutdown-guard.sh</code></summary>
+
+```text
+Running shutdown-guard.sh
+Description: Gate a shell-initiated shutdown/restart behind .env guards
+
+Show this help  : shutdown-guard.sh -h
+Run this script : shutdown-guard.sh -s
+Preview only    : shutdown-guard.sh -n -s
+
+  -s, --shutdown  Power off when every guard passes
+  -r, --restart   Reboot when every guard passes
+  -n, --dry-run   Run the guards; print the power command, never run it
+  -y, --yes       Skip the confirmation prompt before powering off
+  -f, --force     Bypass ALL guards (use with care)
+  -h, --help      Show this help and exit
+
+Exactly one of -s/--shutdown or -r/--restart is required.
+
+Configuration is read from <repo-root>/.env (see .env.example):
+SHUTDOWN_GUARD_<i>_CMD / _DESC / _MODE declare the guards (scanned from
+1 until the first missing _CMD); modes are status, empty, match:<ERE>
+and nomatch:<ERE>. SHUTDOWN_GUARD_TIMEOUT (default 10 seconds, fail
+closed) and SHUTDOWN_GUARD_STRICT (default 0) tune the evaluation.
+
+Exit codes: 0 proceeded, 1 usage/configuration error, 3 BLOCKED by a
+guard (nothing was shut down).
+
+This gates only shutdowns routed through this script. It cannot stop
+the desktop power menu, the power button, sudo poweroff, --force,
+or remote/cron-triggered shutdowns.
+```
+
+</details>
+
+<details markdown="1">
 <summary><strong>Splice Images</strong> — <code>src/scripts/splice-images.sh</code></summary>
 
 ```text

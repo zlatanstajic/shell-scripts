@@ -55,6 +55,32 @@ assert_contains "$ASSERT_OUTPUT" "bad thing" \
 assert_exit 0 "End with no argument defaults to success" -- \
   bash -c "SCRIPT_NAME=t; source '$REPO_ROOT/src/lib/common.sh'; End"
 
+# --- EndCode ------------------------------------------------------------------
+
+assert_exit 3 "EndCode 3 exits with code 3" -- \
+  bash -c "SCRIPT_NAME=t; source '$REPO_ROOT/src/lib/common.sh'; \
+    EndCode 3 'blocked'"
+assert_contains "$ASSERT_OUTPUT" "blocked" \
+  "EndCode includes the supplied message"
+
+assert_exit 0 "EndCode 0 exits with code 0" -- \
+  bash -c "SCRIPT_NAME=t; source '$REPO_ROOT/src/lib/common.sh'; EndCode 0"
+assert_contains "$ASSERT_OUTPUT" "finishing OK" \
+  "EndCode 0 prints the OK finishing message"
+
+# No message argument: must not trip set -u and still exits with the code.
+assert_exit 3 "EndCode 3 without a message exits with code 3" -- \
+  bash -c "set -u; SCRIPT_NAME=t; \
+    source '$REPO_ROOT/src/lib/common.sh'; EndCode 3"
+
+# Codes above 255 are clamped (exit truncates modulo 256 otherwise).
+assert_exit 255 "EndCode clamps a code above 255 to 255" -- \
+  bash -c "SCRIPT_NAME=t; source '$REPO_ROOT/src/lib/common.sh'; EndCode 300"
+
+# Malformed code falls back to 1.
+assert_exit 1 "EndCode with a non-numeric code falls back to 1" -- \
+  bash -c "SCRIPT_NAME=t; source '$REPO_ROOT/src/lib/common.sh'; EndCode oops"
+
 # --- MissingRequiredArguments -------------------------------------------------
 
 assert_exit 1 "MissingRequiredArguments exits with code 1" -- \

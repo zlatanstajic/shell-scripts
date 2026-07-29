@@ -20,6 +20,7 @@ EXPECTED_SCRIPTS=(
   "Hash Filenames"
   "PHP Switch"
   "Restore VSCode Folder"
+  "Shutdown Guard"
   "Splice Images"
   "Splice Videos"
   "Tampermonkey Install"
@@ -112,8 +113,8 @@ OUT="$(run_gen "$SANDBOX")"; rm -f "$OUT"
 REF="$SANDBOX/docs/_includes/command-reference.md"
 REF_BODY="$(cat "$REF")"
 
-assert_eq 11 "$(grep -cF '<summary>' "$REF")" \
-  "rendered reference has exactly eleven collapsible sections"
+assert_eq 12 "$(grep -cF '<summary>' "$REF")" \
+  "rendered reference has exactly twelve collapsible sections"
 for name in "${EXPECTED_SCRIPTS[@]}"
 do
   assert_contains "$REF_BODY" "<summary><strong>$name</strong>" \

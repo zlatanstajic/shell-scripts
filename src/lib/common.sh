@@ -39,6 +39,39 @@ End()
 }
 
 ################################################################################
+# Function    : EndCode
+# Description : Terminates shell script with an explicit exit code. Additive
+#               sibling of End (End is intentionally left untouched): code 0
+#               prints the OK finishing line, any other code prints the bold
+#               ERROR footer. A malformed (non-integer) code falls back to 1,
+#               and a code above 255 is clamped to 255 (exit truncates modulo
+#               256, which would otherwise turn e.g. 300 into 44).
+# Parameters  : exit-code [error-text]
+################################################################################
+
+EndCode()
+{
+  local code="${1:-1}"
+  local message="${2:-}"
+  case "$code" in
+    ''|*[!0-9]*) code=1 ;;
+  esac
+  if [ "$code" -gt 255 ]
+  then
+    code=255
+  fi
+  if [ "$code" -eq 0 ]
+  then
+    echo ""
+    echo "Script $SCRIPT_NAME finishing OK"
+    exit 0
+  fi
+  echo ""
+  echo -e "Script $SCRIPT_NAME finishing with \e[1mERROR [$message]\e[0m"
+  exit "$code"
+}
+
+################################################################################
 # Function    : RunScript
 # Description : Installs a Ctrl-C/error trap routed through End, then runs the
 #               provided main function (mirrors Python run_script wrapper)
