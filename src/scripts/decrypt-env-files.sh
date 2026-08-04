@@ -3,7 +3,7 @@
 ################################################################################
 # Script name : decrypt-env-files.sh
 # Description : Decrypt backed-up project env files (.env.enc/.env.rb.enc)
-# Parameters  : /
+# Parameters  : -c | -n | -y | -h
 # Author      : Zlatan Stajic <contact@zlatanstajic.com>
 # License     : MIT
 ################################################################################
@@ -40,6 +40,10 @@ DRY_RUN=0
 # shellcheck disable=SC2034  # read by ConfirmOrAbort in common.sh
 ASSUME_YES=0
 
+# Selected mode (CLI only), one of "decrypt" (default) or "clean". Declared here
+# for the same reason as the flags above: a stray .env var must not pin it.
+MODE="decrypt"
+
 ################################################################################
 # Function    : Help
 # Description : Shows help text for script
@@ -54,20 +58,25 @@ Help()
   echo "Show this help  : $SCRIPT_NAME -h"
   echo "Run this script : $SCRIPT_NAME"
   echo "Preview only    : $SCRIPT_NAME -n"
+  echo "Clean only      : $SCRIPT_NAME -c"
   echo ""
   echo "  -h, --help     Show this help and exit"
+  echo "  -c, --clean    Remove the .decrypted plaintext files (no decryption)"
   echo "  -n, --dry-run  Print intended changes; make no filesystem change"
   echo "  -y, --yes      Skip the confirmation prompt before mutating"
   echo ""
   echo "Configuration is read from $PROJECT_ROOT/.env (see .env.example)."
   echo "BACKUP_LOCATION, PROJECTS_DESTINATION_FOLDER_NAME and"
   echo "ENV_FILES_PASSWORD are all required."
+  echo "With --clean only BACKUP_LOCATION and"
+  echo "PROJECTS_DESTINATION_FOLDER_NAME are needed (neither"
+  echo "ENV_FILES_PASSWORD nor openssl is required)."
 }
 
 ################################################################################
 # Function    : GetArguments
 # Description : Gets arguments passed to the script
-# Parameters  : -h
+# Parameters  : -c | -n | -y | -h
 ################################################################################
 
 GetArguments()
@@ -78,6 +87,10 @@ GetArguments()
       -h|--help)
         Help
         End 0
+        ;;
+      -c|--clean)
+        MODE="clean"
+        shift
         ;;
       -n|--dry-run)
         # shellcheck disable=SC2034  # read by RunOrEcho/ConfirmOrAbort
@@ -117,15 +130,20 @@ RequireOpenssl()
 ################################################################################
 # Function    : ValidateEnvironment
 # Description : Ends with the standard missing-arguments error when any required
-#               .env value is unset
+#               .env value is unset. The projects-tree location is required in
+#               both modes; ENV_FILES_PASSWORD only when actually decrypting
 # Parameters  : /
 ################################################################################
 
 ValidateEnvironment()
 {
   if [ -z "${BACKUP_LOCATION:-}" ] \
-    || [ -z "${PROJECTS_DESTINATION_FOLDER_NAME:-}" ] \
-    || [ -z "${ENV_FILES_PASSWORD:-}" ]
+    || [ -z "${PROJECTS_DESTINATION_FOLDER_NAME:-}" ]
+  then
+    Help
+    MissingRequiredArguments
+  fi
+  if [ "$MODE" = "decrypt" ] && [ -z "${ENV_FILES_PASSWORD:-}" ]
   then
     Help
     MissingRequiredArguments
@@ -203,6 +221,71 @@ DoDecrypt()
 }
 
 ################################################################################
+# Function    : DoClean
+# Description : Walks the backup projects tree and removes every plaintext file
+#               DoDecrypt can write: the exact image of its
+#               "${src%.enc}.decrypted" derivation over the only two ciphertext
+#               names it accepts, i.e. .env.decrypted and .env.rb.decrypted.
+#               Never a *.decrypted glob, so unrelated plaintext is left alone.
+#               Dry-run aware via RunOrEcho, confirm-gated via ConfirmOrAbort
+# Parameters  : /
+################################################################################
+
+DoClean()
+{
+  local projects_dir="$BACKUP_LOCATION/$PROJECTS_DESTINATION_FOLDER_NAME"
+  if [ ! -d "$projects_dir" ]
+  then
+    LogInfo "No decrypted env files found; nothing to remove."
+    End 0
+  fi
+  local targets=()
+  local file count=0
+  # Keep these two names in sync with DoDecrypt's ${src%.enc}.decrypted output.
+  # -type f (and no -L) keeps directories and symlinks of the same name out of
+  # the set. Process substitution (not a pipe) so the array survives the loop.
+  while IFS= read -r -d '' file
+  do
+    targets+=("$file")
+  done < <(
+    find "$projects_dir" -type f \
+      \( -name '.env.decrypted' -o -name '.env.rb.decrypted' \) -print0
+  )
+  # Early return also keeps the loops below off an empty array under set -u.
+  if [ "${#targets[@]}" -eq 0 ]
+  then
+    LogInfo "No decrypted env files found; nothing to remove."
+    return 0
+  fi
+  # List every target BEFORE prompting, and prompt only when there is work.
+  LogWarn "About to remove ${#targets[@]} decrypted env file(s):"
+  for file in "${targets[@]}"
+  do
+    LogInfo "  $file"
+  done
+  # Confirm before any real removal; bypassed under -y/--yes and dry-run.
+  ConfirmOrAbort
+  for file in "${targets[@]}"
+  do
+    if RunOrEcho rm -f -- "$file"
+    then
+      # Under dry-run the "[dry-run] would: rm ..." line from RunOrEcho is the
+      # only output wanted; a past-tense "Removed" would misrepresent it.
+      [ "$DRY_RUN" -eq 1 ] || LogInfo "Removed $file"
+      count=$((count + 1))
+    else
+      LogWarn "Unable to remove $file"
+    fi
+  done
+  if [ "$DRY_RUN" -eq 1 ]
+  then
+    LogInfo "Would remove $count decrypted env file(s)."
+  else
+    LogInfo "Removed $count decrypted env file(s)."
+  fi
+}
+
+################################################################################
 # Function    : Main
 # Description : Main entry point for the script
 # Parameters  : arguments
@@ -211,10 +294,17 @@ DoDecrypt()
 Main()
 {
   GetArguments "$@"
-  RequireOpenssl
   ValidateEnvironment
+  # Clean mode removes plaintext only: no crypto, hence no RequireOpenssl.
+  if [ "$MODE" = "clean" ]
+  then
+    DoClean
+    LogInfo "Completed cleanup."
+    End 0
+  fi
+  RequireOpenssl
   LogWarn "This writes plaintext secrets next to the ciphertext in the backup"
-  LogInfo "tree. Remove the .decrypted files manually when you are done."
+  LogInfo "tree. Remove the .decrypted files with -c/--clean when you are done."
   # Confirm before any real mutation; bypassed under -y/--yes and dry-run.
   ConfirmOrAbort
   DoDecrypt

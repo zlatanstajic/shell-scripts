@@ -29,14 +29,19 @@ Description: Decrypt backed-up project env files (.env.enc/.env.rb.enc)
 Show this help  : decrypt-env-files.sh -h
 Run this script : decrypt-env-files.sh
 Preview only    : decrypt-env-files.sh -n
+Clean only      : decrypt-env-files.sh -c
 
   -h, --help     Show this help and exit
+  -c, --clean    Remove the .decrypted plaintext files (no decryption)
   -n, --dry-run  Print intended changes; make no filesystem change
   -y, --yes      Skip the confirmation prompt before mutating
 
 Configuration is read from <repo-root>/.env (see .env.example).
 BACKUP_LOCATION, PROJECTS_DESTINATION_FOLDER_NAME and
 ENV_FILES_PASSWORD are all required.
+With --clean only BACKUP_LOCATION and
+PROJECTS_DESTINATION_FOLDER_NAME are needed (neither
+ENV_FILES_PASSWORD nor openssl is required).
 ```
 
 </details>
