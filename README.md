@@ -10,6 +10,8 @@
 
 📖 **Browse the docs:** [zlatanstajic.github.io/shell-scripts](https://zlatanstajic.github.io/shell-scripts/) (source in [`docs/`](docs/), published via GitHub Pages).
 
+<img src="assets/img/og-image.png" alt="Shell Scripts social preview" width="100%">
+
 ## Table of Contents
 
 - [Install](#install)
