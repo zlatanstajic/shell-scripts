@@ -6,7 +6,7 @@
 [![Made with Bash](https://img.shields.io/badge/Made%20with-Bash-1f425f.svg?logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![Shellcheck](https://img.shields.io/badge/linted%20with-shellcheck-brightgreen.svg)](https://www.shellcheck.net/)
 
-> Custom Unix shell scripts for git development setup, PHP version switching, password generation, machine backups, restoring a project's `.vscode` folder, hashing filenames, copying a git diff between commits, splicing images and videos, and gating shell-initiated shutdowns/restarts behind configurable guards.
+> Custom Unix shell scripts for git development setup, PHP version switching, password generation, machine backups, restoring a project's `.vscode` folder, hashing filenames, copying a git diff between commits, splicing images and videos, gating shell-initiated shutdowns/restarts behind configurable guards, and listing every custom command you have — from this repository and from the sibling `python_scripts` repository — with a marker showing whether it currently resolves on `PATH`.
 
 📖 **Browse the docs:** [zlatanstajic.github.io/shell-scripts](https://zlatanstajic.github.io/shell-scripts/) (source in [`docs/`](docs/), published via GitHub Pages).
 
@@ -180,6 +180,37 @@ Preview only     : hash-filenames.sh -d /path/to/dir -n
 
 Target extensions are read from HASH_FILENAMES_FILE_EXTENSIONS in
 <repo-root>/.env (see .env.example).
+```
+
+</details>
+
+<details markdown="1">
+<summary><strong>My Scripts</strong> — <code>src/scripts/my-scripts.sh</code></summary>
+
+```text
+Running my-scripts.sh
+Description: List the custom commands provided by the shell-scripts
+and python_scripts repositories, each with a one-line description and
+whether it currently resolves on PATH.
+
+Show this help  : my-scripts.sh -h
+Run this script : my-scripts.sh
+
+  -f, --filter  Only list commands whose NAME contains this text
+                (case-insensitive substring match, optional)
+  -h, --help    Show this help
+
+The shell-scripts location is derived from this script's own path and
+is never configurable. The python_scripts location comes from the
+EXPORTED environment variable MY_SCRIPTS_PYTHON_REPO_PATH (default:
+$HOME/repos/python_scripts). It is NOT a .env key - this script never
+reads .env, so setting it there has no effect. When that repository is
+missing, its section is skipped with a warning.
+
+python_scripts commands are console entry points installed inside that
+repository's virtualenv, so they read as [not on PATH] unless the
+virtualenv is active. Shell commands read as [not on PATH] until
+install.sh has linked them onto PATH.
 ```
 
 </details>

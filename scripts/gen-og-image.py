@@ -17,9 +17,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 W, H = 1200, 630
-BG = (13, 17, 23)          # GitHub dark
-PANEL = (22, 27, 34)      # Terminal surface
-BORDER = (48, 54, 61)     # Terminal border
+BG = (15, 23, 42)         # Shared project-family navy
+PANEL = (31, 41, 55)      # Terminal surface
+BORDER = (62, 62, 58)     # Terminal border
 GREEN = (78, 170, 37)     # GNU Bash green
 INK = (240, 246, 252)     # Primary text
 MUTED = (139, 148, 158)   # Secondary text

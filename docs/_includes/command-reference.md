@@ -125,6 +125,37 @@ Target extensions are read from HASH_FILENAMES_FILE_EXTENSIONS in
 </details>
 
 <details markdown="1">
+<summary><strong>My Scripts</strong> — <code>src/scripts/my-scripts.sh</code></summary>
+
+```text
+Running my-scripts.sh
+Description: List the custom commands provided by the shell-scripts
+and python_scripts repositories, each with a one-line description and
+whether it currently resolves on PATH.
+
+Show this help  : my-scripts.sh -h
+Run this script : my-scripts.sh
+
+  -f, --filter  Only list commands whose NAME contains this text
+                (case-insensitive substring match, optional)
+  -h, --help    Show this help
+
+The shell-scripts location is derived from this script's own path and
+is never configurable. The python_scripts location comes from the
+EXPORTED environment variable MY_SCRIPTS_PYTHON_REPO_PATH (default:
+$HOME/repos/python_scripts). It is NOT a .env key - this script never
+reads .env, so setting it there has no effect. When that repository is
+missing, its section is skipped with a warning.
+
+python_scripts commands are console entry points installed inside that
+repository's virtualenv, so they read as [not on PATH] unless the
+virtualenv is active. Shell commands read as [not on PATH] until
+install.sh has linked them onto PATH.
+```
+
+</details>
+
+<details markdown="1">
 <summary><strong>PHP Switch</strong> — <code>src/scripts/php-switch.sh</code></summary>
 
 ```text

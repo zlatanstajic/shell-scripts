@@ -96,7 +96,7 @@ Tests must be isolated and non-interactive:
 - Never stage or commit changes on your own initiative.
 - Do not discard, reset, or overwrite unrelated working-tree changes.
 - If branch creation is requested, branch from `master` and use
-  `issues/<issue-number>_<short_description>`.
+  `issues/<issue-number>-<short-description>` (kebab-case).
 
 ## Secrets
 

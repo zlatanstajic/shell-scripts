@@ -9,7 +9,7 @@ nav_order: 4
 Contributions are welcome. To propose a change:
 
 1. **Fork and branch.** Fork the repository, then create a branch off `master`
-   (e.g. `issues/12_short_description`).
+   using kebab-case (e.g. `issues/12-short-description`).
 2. **Edit in `src/`.** Make changes to the scripts in `src/scripts/`, not in any
    `deploy/` copy. Shared logic belongs in `src/lib/common.sh` — each script
    sources it via `source "$SCRIPT_DIR/../lib/common.sh"`, so reuse helpers
