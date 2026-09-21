@@ -6,7 +6,7 @@
 [![Made with Bash](https://img.shields.io/badge/Made%20with-Bash-1f425f.svg?logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![Shellcheck](https://img.shields.io/badge/linted%20with-shellcheck-brightgreen.svg)](https://www.shellcheck.net/)
 
-> Custom Unix shell scripts for git development setup, PHP version switching, password generation, machine backups, restoring a project's `.vscode` folder, hashing filenames, copying a git diff between commits, splicing images and videos, gating shell-initiated shutdowns/restarts behind configurable guards, and listing every custom command you have — from this repository and from the sibling `python_scripts` repository — with a marker showing whether it currently resolves on `PATH`.
+> Custom Unix shell scripts for git development setup, PHP version switching, password generation, machine backups, decrypting the `.env` files a backup encrypted, restoring a project's `.vscode` folder, hashing filenames, copying a git diff between commits, splicing images and videos, installing Tampermonkey userscripts from a GitHub repository, gating shell-initiated shutdowns/restarts behind configurable guards, and listing every custom command you have — from this repository and from the sibling `python_scripts` repository — with a marker showing whether it currently resolves on `PATH`.
 
 📖 **Browse the docs:** [zlatanstajic.github.io/shell-scripts](https://zlatanstajic.github.io/shell-scripts/) (source in [`docs/`](docs/), published via GitHub Pages).
 
@@ -18,6 +18,8 @@
 - [List of Available Scripts](#list-of-available-scripts)
 - [Testing](#testing)
 - [Continuous Integration](#continuous-integration)
+- [Releases](#releases)
+- [Security](#security)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -384,7 +386,8 @@ The runner prints a ✓/✗ line per assertion and exits non-zero if any asserti
 - [`tests/run.sh`](tests/run.sh) — discovers and sources every `tests/test_*.sh` file, then prints a summary.
 - [`tests/lib/assert.sh`](tests/lib/assert.sh) — assertion helpers (`assert_eq`, `assert_contains`, `assert_match`, `assert_exit`) and the shared `TESTS_RUN`/`TESTS_FAILED` counters plus a resolved `REPO_ROOT`.
 - [`tests/test_common.sh`](tests/test_common.sh) — unit tests for the shared library [`src/lib/common.sh`](src/lib/common.sh) (`UrlEncode`, the `Log*`/`EchoBold` helpers, and `End`/`MissingRequiredArguments` exit codes, the last run in subshells because they call `exit`).
-- [`tests/scripts/test_generate_password.sh`](tests/scripts/test_generate_password.sh) — behavioural tests that drive [`generate-password.sh`](src/scripts/generate-password.sh) as a subprocess (help text, argument and length validation, output length, character-class coverage).
+- [`tests/test_install.sh`](tests/test_install.sh) — tests for [`install.sh`](install.sh) and [`uninstall.sh`](uninstall.sh), including the assertion that the user-facing command set and [`src/completion/shell-scripts.bash`](src/completion/shell-scripts.bash) stay in step.
+- [`tests/scripts/`](tests/scripts/) — behavioural tests that drive one script each as a subprocess. Covered today: `backup`, `decrypt-env-files`, `gen-docs`, `generate-password`, `hash-filenames`, `my-scripts`, `shutdown-guard`, `splice-images`, `splice-videos`, `tampermonkey-install`. Not yet covered: `dev-setup`, `git-copy`, `php-switch`, `restore-vscode-folder`.
 
 To add tests for another script, drop a `tests/scripts/test_<name>.sh` file: use `$REPO_ROOT` for paths, run `exit`-calling code through `assert_exit` in a subshell, and assert whole-script behaviour by running it with `bash "$SCRIPT"` and checking the exit code plus the captured `$ASSERT_OUTPUT`. Capture script output via a temp file rather than a pipe — `generate-password.sh` can leave a `tr < /dev/urandom` reader holding a pipe open, which hangs `| sed` / `$()` readers on EOF.
 
@@ -394,11 +397,21 @@ To add tests for another script, drop a `tests/scripts/test_<name>.sh` file: use
 
 ## Continuous Integration
 
-Every push to `master` and every pull request runs the test suite (and an advisory `shellcheck` lint) via GitHub Actions — see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+Every push to `master` and every pull request runs three jobs via GitHub Actions — see [`.github/workflows/ci.yml`](.github/workflows/ci.yml). **All three are hard gates**; a failure in any of them fails the build.
+
+| Job | Command | Checks |
+|-----|---------|--------|
+| Test suite | `bash tests/run.sh` | Every assertion in the pure-bash harness. |
+| Docs reference | `bash src/scripts/gen-docs.sh --check` | The generated flags/usage reference is in sync with each script's `-h`. |
+| ShellCheck | `shellcheck src/scripts/*.sh src/lib/common.sh install.sh uninstall.sh` | Lint across every script, the shared library, and both installers. |
+
+The `shellcheck` version is pinned in the workflow (and its download checksum verified), so a refreshed runner image cannot introduce new findings and break `master` without a change in this repository. The workflow declares `permissions: contents: read` — no job publishes, pushes, or reads a secret — and uses a concurrency group so a superseded run for the same ref is cancelled.
 
 ### Pre-commit hook
 
-Run the same checks locally before each commit using a native git hook (no `husky`, `npm`, or other dependency). The hook lives in the repository at [`.githooks/pre-commit`](.githooks/pre-commit): it runs the test suite as a hard gate and `shellcheck` as an advisory step, mirroring CI so failures surface before you push.
+Run the same three checks locally before each commit using a native git hook (no `husky`, `npm`, or other dependency). The hook lives in the repository at [`.githooks/pre-commit`](.githooks/pre-commit), so failures surface before you push.
+
+**Enforcement differs from CI on purpose.** In CI all three checks are hard gates. In the hook only the test suite blocks a commit; the docs-reference check and `shellcheck` print a warning and let the commit through. A local hook must not block you because of your own `.env` (`gen-docs.sh` runs every script's `-h`, which sources it) or because `shellcheck` is missing or a different version. CI is the enforcement boundary; the hook is the fast heads-up.
 
 Git does not enable repository hooks automatically on clone, so enable them once per clone by pointing git at the versioned hooks directory:
 
@@ -406,7 +419,7 @@ Git does not enable repository hooks automatically on clone, so enable them once
 git config core.hooksPath .githooks
 ```
 
-From then on the hook runs automatically on every `git commit`. A failing test aborts the commit; a missing `shellcheck` is skipped (lint is advisory). Bypass the hook for a single commit with:
+From then on the hook runs automatically on every `git commit`. A failing test aborts the commit; a missing `shellcheck` is skipped. Bypass the hook for a single commit with:
 
 ```bash
 git commit --no-verify
@@ -416,9 +429,30 @@ git commit --no-verify
 
 ---
 
+## Releases
+
+Release history lives on the [GitHub releases page](https://github.com/zlatanstajic/shell-scripts/releases), which is the canonical changelog for this project — there is deliberately no `CHANGELOG.md` to keep in sync with it. Each release is tagged `MAJOR.MINOR.PATCH`; a new major marks a script being added, removed, or changed in a way that breaks an existing invocation.
+
+[⬆ back to top](#table-of-contents)
+
+---
+
+## Security
+
+Found a vulnerability? **Do not open a public issue.** See [SECURITY.md](SECURITY.md) for the private reporting process, what to include, and what is in and out of scope.
+
+Two things worth knowing before you run anything:
+
+- **Your `.env` is sourced as shell, not parsed.** Any shell in it executes — including on a `-h` run, because the `source` happens before argument parsing. Treat it as executable code you own.
+- **`shutdown-guard.sh` only gates shutdowns routed through itself.** The desktop power menu, the power button, `sudo poweroff`, and remote or cron shutdowns all bypass it by design.
+
+[⬆ back to top](#table-of-contents)
+
+---
+
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose a change.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose a change, and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for the standards expected of everyone taking part.
 
 [⬆ back to top](#table-of-contents)
 

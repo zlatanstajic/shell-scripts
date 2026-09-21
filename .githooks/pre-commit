@@ -2,10 +2,17 @@
 
 ################################################################################
 # Script name : .githooks/pre-commit
-# Description : Git pre-commit hook. Runs the test suite (hard gate) and
-#               shellcheck (advisory) before allowing a commit. Mirrors the
-#               GitHub Actions CI workflow so failures surface locally first.
+# Description : Git pre-commit hook. Runs the same three checks as the GitHub
+#               Actions CI workflow - tests, generated-docs drift, shellcheck -
+#               so failures surface locally first.
 #               Enable per clone with: git config core.hooksPath .githooks
+#
+#               Enforcement differs from CI on purpose. In CI all three are
+#               hard gates. Here only the test suite blocks a commit; docs
+#               drift and shellcheck warn. A local hook must not block on a
+#               developer's own .env (gen-docs.sh runs every script's -h,
+#               which sources it) or on a missing/older shellcheck. CI is the
+#               enforcement boundary; this hook is the fast heads-up.
 # Author      : Zlatan Stajic <contact@zlatanstajic.com>
 # License     : MIT
 ################################################################################
@@ -23,13 +30,14 @@ then
   exit 1
 fi
 
-# Advisory: generated flags/usage reference drift. Warn, never block (until
-# determinism is proven host-independent and the gate is promoted).
+# Advisory here, hard gate in CI. See the header note: this must not block a
+# commit because of the developer's local .env.
 echo "pre-commit: checking generated docs reference (advisory)"
 bash src/scripts/gen-docs.sh --check || \
   echo "pre-commit: generated docs out of date - run bash src/scripts/gen-docs.sh (not blocking)" >&2
 
-# Advisory: lint not enforced (see CLAUDE.md). Warn, never block.
+# Advisory here, hard gate in CI (which pins the shellcheck version). Warn,
+# never block: a local shellcheck may be absent or a different version.
 if command -v shellcheck >/dev/null 2>&1
 then
   echo "pre-commit: running shellcheck (advisory)"

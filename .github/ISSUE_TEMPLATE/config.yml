@@ -1,0 +1,10 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/zlatanstajic/shell-scripts/blob/master/SECURITY.md
+    about: >
+      Do not open a public issue. Report it privately - see SECURITY.md for
+      the process and what to include.
+  - name: Documentation
+    url: https://zlatanstajic.github.io/shell-scripts/
+    about: Per-script pages, parameters, and the generated flags reference.

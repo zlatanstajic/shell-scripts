@@ -1,0 +1,20 @@
+version: 2
+
+updates:
+  # GitHub Actions is the only dependency ecosystem in this repository. The
+  # scripts themselves have no package manager, and docs/Gemfile is a
+  # local-preview-only file with no committed lockfile (GitHub Pages builds
+  # the site natively), so tracking bundler here would be noise.
+  #
+  # Not covered by Dependabot: the pinned SHELLCHECK_VERSION and its
+  # SHELLCHECK_SHA256 in ci.yml. Bump those by hand from
+  # https://github.com/koalaman/shellcheck/releases, taking the checksum from
+  # the release asset, and re-run the lint locally before pushing.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci"
+    labels:
+      - dependencies
