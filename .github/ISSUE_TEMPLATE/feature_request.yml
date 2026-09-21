@@ -1,0 +1,59 @@
+name: Feature request
+description: Suggest a new script, or a new flag or behavior for an existing one.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        These are small, standalone Bash utilities for a Unix dev workflow.
+        The best proposals fit that shape: one script, one job, no build step.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What are you proposing?
+      options:
+        - A new flag or behavior for an existing script
+        - A new script
+        - A change to the shared library, installer, or test harness
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the task you are trying to do, not the solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: >
+        Sketch the usage. For a new flag, show the invocation. For a new
+        script, show what it would do and what it would print.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: deps
+    attributes:
+      label: External tools required
+      description: >
+        Any command the script would shell out to (ffmpeg, jq, openssl, curl,
+        and so on). Say whether it should be a hard dependency or degrade
+        gracefully with a warning when absent.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Including any existing script that almost does this.
+    validations:
+      required: false

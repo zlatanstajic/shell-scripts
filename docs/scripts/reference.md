@@ -2,7 +2,7 @@
 layout: default
 title: Command Reference
 parent: Scripts
-nav_order: 12
+nav_order: 15
 ---
 
 # Command Reference

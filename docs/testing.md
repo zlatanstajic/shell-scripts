@@ -31,9 +31,14 @@ assertion fails, so it doubles as a CI gate.
   `src/lib/common.sh` (`UrlEncode`, the `Log*`/`EchoBold` helpers, and the
   `End`/`MissingRequiredArguments` exit codes — the last run in subshells
   because they call `exit`).
-- `tests/scripts/test_generate_password.sh` — behavioural tests driving
-  `generate-password.sh` as a subprocess (help text, argument and length
-  validation, output length, character-class coverage).
+- `tests/test_install.sh` — tests for `install.sh` and `uninstall.sh`,
+  including the assertion that the user-facing command set and
+  `src/completion/shell-scripts.bash` stay in step.
+- `tests/scripts/` — behavioural tests driving one script each as a
+  subprocess. Covered today: `backup`, `decrypt-env-files`, `gen-docs`,
+  `generate-password`, `hash-filenames`, `my-scripts`, `shutdown-guard`,
+  `splice-images`, `splice-videos`, `tampermonkey-install`. Not yet covered:
+  `dev-setup`, `git-copy`, `php-switch`, `restore-vscode-folder`.
 
 ## Adding a test
 
@@ -48,16 +53,33 @@ can leave a `tr < /dev/urandom` reader holding a pipe open, which hangs
 
 ## Continuous integration
 
-Every push to `master` and every pull request runs the test suite (and an
-advisory `shellcheck` lint) via GitHub Actions — see
-`.github/workflows/ci.yml`.
+Every push to `master` and every pull request runs three jobs via GitHub
+Actions — see `.github/workflows/ci.yml`. **All three are hard gates**; a
+failure in any of them fails the build.
+
+| Job | Command |
+|-----|---------|
+| Test suite | `bash tests/run.sh` |
+| Docs reference | `bash src/scripts/gen-docs.sh --check` |
+| ShellCheck | `shellcheck src/scripts/*.sh src/lib/common.sh install.sh uninstall.sh` |
+
+The `shellcheck` version is pinned in the workflow (and its download checksum
+verified), so a refreshed runner image cannot introduce new findings and break
+`master` without a change in this repository. The workflow declares
+`permissions: contents: read` and cancels superseded runs for the same ref.
 
 ### Pre-commit hook
 
-Run the same checks locally before each commit with a native git hook (no
-`husky`, `npm`, or other dependency). The hook lives at `.githooks/pre-commit`:
-it runs the test suite as a hard gate and `shellcheck` as an advisory step,
-mirroring CI so failures surface before you push.
+Run the same three checks locally before each commit with a native git hook
+(no `husky`, `npm`, or other dependency). The hook lives at
+`.githooks/pre-commit`, so failures surface before you push.
+
+**Enforcement differs from CI on purpose.** In CI all three checks are hard
+gates. In the hook only the test suite blocks a commit; the docs-reference
+check and `shellcheck` warn and let the commit through. A local hook must not
+block you because of your own `.env` (`gen-docs.sh` runs every script's `-h`,
+which sources it) or because `shellcheck` is missing or a different version.
+CI is the enforcement boundary; the hook is the fast heads-up.
 
 Git does not enable repository hooks automatically on clone — enable them once
 per clone:
