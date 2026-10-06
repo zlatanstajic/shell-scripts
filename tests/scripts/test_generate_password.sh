@@ -10,6 +10,18 @@
 
 GENPW="$REPO_ROOT/src/scripts/generate-password.sh"
 
+# A successful run copies the password with xclip, so every run goes through
+# genpw() with a no-op xclip (it drains stdin) first on PATH, and the
+# developer's clipboard is never overwritten.
+GP_STUB="$(mktemp -d)"
+printf '#!/bin/sh\ncat > /dev/null\n' > "$GP_STUB/xclip"
+chmod +x "$GP_STUB/xclip"
+
+genpw()
+{
+  PATH="$GP_STUB:$PATH" bash "$GENPW" "$@"
+}
+
 # Output layout (see the script's Execution section):
 #   line 1: "Script ... starting..."
 #   line 2: (blank)
@@ -21,7 +33,7 @@ password()
 {
   local tmp out
   tmp="$(mktemp)"
-  bash "$GENPW" "$@" > "$tmp" 2>/dev/null
+  genpw "$@" > "$tmp" 2>/dev/null
   out="$(sed -n '3p' "$tmp")"
   rm -f "$tmp"
   echo "$out"
@@ -29,30 +41,30 @@ password()
 
 # --- Help / argument parsing --------------------------------------------------
 
-assert_exit 0 "-h prints help and exits 0" -- bash "$GENPW" -h
+assert_exit 0 "-h prints help and exits 0" -- genpw -h
 assert_contains "$ASSERT_OUTPUT" "Generate strong and secure password" \
   "-h output describes the script"
 
-assert_exit 1 "-l with no value exits 1" -- bash "$GENPW" -l
-assert_exit 1 "unknown argument exits 1" -- bash "$GENPW" --bogus
+assert_exit 1 "-l with no value exits 1" -- genpw -l
+assert_exit 1 "unknown argument exits 1" -- genpw --bogus
 
 # --- Length validation --------------------------------------------------------
 
-assert_exit 1 "non-integer length exits 1" -- bash "$GENPW" -l abc
+assert_exit 1 "non-integer length exits 1" -- genpw -l abc
 assert_contains "$ASSERT_OUTPUT" "positive integer" \
   "non-integer length explains the integer requirement"
 
-assert_exit 1 "length below minimum (7) exits 1" -- bash "$GENPW" -l 7
+assert_exit 1 "length below minimum (7) exits 1" -- genpw -l 7
 assert_contains "$ASSERT_OUTPUT" "greater than or equal to 8" \
   "below-minimum length explains the minimum"
 
-assert_exit 1 "length not divisible by 4 (10) exits 1" -- bash "$GENPW" -l 10
+assert_exit 1 "length not divisible by 4 (10) exits 1" -- genpw -l 10
 assert_contains "$ASSERT_OUTPUT" "divisible by 4" \
   "indivisible length explains the divisibility rule"
 
 # --- Successful generation ----------------------------------------------------
 
-assert_exit 0 "valid length exits 0" -- bash "$GENPW" -l 16
+assert_exit 0 "valid length exits 0" -- genpw -l 16
 
 PW_DEFAULT="$(password)"
 assert_eq 20 "${#PW_DEFAULT}" "default password length is 20"
@@ -69,5 +81,7 @@ assert_match "$PW_DEFAULT" "[A-Z]"   "password contains an uppercase letter"
 assert_match "$PW_DEFAULT" "[0-9]"   "password contains a digit"
 assert_match "$PW_DEFAULT" "[]!#\$%&()+,.:=?@_{|}~-]" \
   "password contains a punctuation character"
+
+rm -rf "$GP_STUB"
 
 ################################################################################

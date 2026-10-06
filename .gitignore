@@ -1,7 +1,9 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files
 .agency
+.claude/
 .vscode/
 deploy/
+brag-*
 .env
 
 # Jekyll docs build artifacts (docs/ is the GitHub Pages source)

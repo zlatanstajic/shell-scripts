@@ -27,9 +27,9 @@ maintainer-only `gen-docs.sh` is intentionally not installed.
 - **PATH warning:** if the prefix is not on your `PATH`, the installer prints
   (but does not fail on) the exact `export PATH="..."` line to add to your
   shell rc.
-- **Completion:** a bash completion file for the command names is installed
-  into your user bash-completion directory when bash completion is available;
-  otherwise the installer prints a `source` line you can add to `~/.bashrc`.
+- **Completion:** nothing to install — bash already completes the command
+  names from your `PATH`. `uninstall.sh` removes the completion file that older
+  releases installed.
 
 ## How resolution works
 
@@ -49,10 +49,13 @@ bash uninstall.sh            # or: bash uninstall.sh --prefix ~/bin
 ```
 
 `uninstall.sh` removes only the symlinks that point into this repo's
-`src/scripts/`, leaving any other files in the prefix untouched.
+`src/scripts/`, leaving any other files in the prefix untouched. It also
+removes the completion file that older releases installed, if present.
 
 ## Requirements
 
-Linux with GNU coreutils (the scripts rely on `readlink -f`, which BSD/macOS
-`readlink` lacks). `bash`, `ln -s`, `mkdir -p`, and `chmod` are all part of the
-base requirements already.
+Linux with Bash 4+ and GNU coreutils. The scripts use Bash 4 features
+(`readarray`, associative arrays, `${var,,}` case conversion), which the Bash
+3.2 that ships with macOS lacks, and GNU tools such as `readlink -f` and
+`shuf`. `shutdown-guard` also needs systemd (`systemctl`). `bash`, `ln -s`,
+`mkdir -p`, and `chmod` are all part of the base requirements already.

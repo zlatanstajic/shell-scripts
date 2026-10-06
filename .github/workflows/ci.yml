@@ -5,28 +5,51 @@ on:
     branches: [master]
   pull_request:
 
+# Least privilege. No job publishes, pushes, comments, or reads a secret, so
+# the read-only checkout scope is all any of them needs. This overrides the
+# repository-wide default token permission for this workflow.
+permissions:
+  contents: read
+
+# Supersede in-flight runs for the same ref. Safe to cancel unconditionally:
+# no job here writes to the repository or to an external environment.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned deliberately. ShellCheck is a hard gate below, and an unpinned
+  # apt package follows the runner image: a refreshed image could introduce
+  # new findings and break master with no change to this repository.
+  SHELLCHECK_VERSION: "0.11.0"
+  SHELLCHECK_SHA256: "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
+
 jobs:
   shellcheck:
     name: ShellCheck
     runs-on: ubuntu-latest
-    # Advisory: lint not enforced (see CLAUDE.md). Surfaces warnings without
-    # blocking the build. Flip to a hard gate once scripts are warning-clean.
-    continue-on-error: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install shellcheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
+        run: |
+          base="https://github.com/koalaman/shellcheck/releases/download"
+          file="shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          curl -fsSL --retry 3 --retry-all-errors \
+            "${base}/v${SHELLCHECK_VERSION}/${file}" -o /tmp/shellcheck.tar.xz
+          echo "${SHELLCHECK_SHA256}  /tmp/shellcheck.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/shellcheck.tar.xz -C /tmp
+          sudo install -m 0755 \
+            "/tmp/shellcheck-v${SHELLCHECK_VERSION}/shellcheck" \
+            /usr/local/bin/shellcheck
+          shellcheck --version
       - name: Lint scripts
         run: shellcheck src/scripts/*.sh src/lib/common.sh install.sh uninstall.sh
 
   docs:
     name: Docs reference
     runs-on: ubuntu-latest
-    # Advisory: surfaces flags/usage-reference drift without blocking the build
-    # while determinism is proven on the runner. Promote to a hard gate later.
-    continue-on-error: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Check generated reference is up to date
         run: bash src/scripts/gen-docs.sh --check
 
@@ -34,6 +57,6 @@ jobs:
     name: Test suite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Run tests
         run: bash tests/run.sh

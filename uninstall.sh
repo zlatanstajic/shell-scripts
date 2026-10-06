@@ -26,9 +26,14 @@ set -u
 PREFIX="$HOME/.local/bin"
 
 SRC_DIR="$SCRIPT_DIR/src/scripts"
-COMPLETION_SRC="$SCRIPT_DIR/src/completion/shell-scripts.bash"
+
+# Older install.sh releases copied a bash completion file (no longer shipped)
+# into this directory; uninstall still removes that copy. The path mirrors
+# where those releases wrote it, and the header line every shipped copy
+# carried marks a file as ours, so an unrelated same-named file survives.
 _completion_default="$HOME/.local/share/bash-completion/completions"
-COMPLETION_DIR="${BASH_COMPLETION_USER_DIR:-$_completion_default}"
+LEGACY_COMPLETION_DIR="${BASH_COMPLETION_USER_DIR:-$_completion_default}"
+LEGACY_COMPLETION_MARKER="# File        : src/completion/shell-scripts.bash"
 
 # Mirror install.sh: gen-docs.sh is never installed, so never look for it here.
 EXCLUDE_NAMES=("gen-docs.sh")
@@ -137,16 +142,17 @@ RemoveLinks()
 }
 
 ################################################################################
-# Function    : RemoveCompletion
-# Description : Removes the completion file this repo installed, if present
+# Function    : RemoveLegacyCompletion
+# Description : Removes the completion file an older install.sh copied, only
+#               when it carries that file's header line
 # Parameters  : /
 ################################################################################
 
-RemoveCompletion()
+RemoveLegacyCompletion()
 {
-  local installed="$COMPLETION_DIR/shell-scripts.bash"
-  if [ -f "$installed" ] && [ -f "$COMPLETION_SRC" ] && \
-     cmp -s "$installed" "$COMPLETION_SRC"
+  local installed="$LEGACY_COMPLETION_DIR/shell-scripts.bash"
+  if [ -f "$installed" ] && \
+     grep -qxF "$LEGACY_COMPLETION_MARKER" "$installed"
   then
     rm -f "$installed"
     LogInfo "Removed $installed"
@@ -164,7 +170,7 @@ Main()
   GetArguments "$@"
 
   RemoveLinks
-  RemoveCompletion
+  RemoveLegacyCompletion
 
   End 0
 }

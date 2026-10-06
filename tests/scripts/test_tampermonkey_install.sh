@@ -4,12 +4,22 @@
 #               script runs Main on source (Execution section), so it is driven
 #               as a subprocess and asserted on exit code + output. The final
 #               URL is always logged, so URL construction is asserted by reading
-#               the captured output. Sourced by tests/run.sh.
+#               the captured output. Every run uses a copied-tree fixture with
+#               no .env, so the developer's gitignored repo .env is never read.
+#               Sourced by tests/run.sh.
 # Author      : Zlatan Stajic <contact@zlatanstajic.com>
 # License     : MIT
 ################################################################################
 
-TMI="$REPO_ROOT/src/scripts/tampermonkey-install.sh"
+# Hermetic fixture: PROJECT_ROOT resolves to $TMI_TMP (two levels up from
+# src/scripts/), which has no .env, so the script's source of
+# "$PROJECT_ROOT/.env" is skipped on every run.
+TMI_TMP="$(mktemp -d)"
+mkdir -p "$TMI_TMP/src/scripts" "$TMI_TMP/src/lib"
+cp "$REPO_ROOT/src/scripts/tampermonkey-install.sh" "$TMI_TMP/src/scripts/"
+cp "$REPO_ROOT/src/lib/common.sh" "$TMI_TMP/src/lib/"
+
+TMI="$TMI_TMP/src/scripts/tampermonkey-install.sh"
 
 # run_tmi() runs the script with the given args, capturing combined output to a
 # temp file (not a pipe) and echoing it. xdg-open is stubbed as a no-op so the
@@ -74,25 +84,10 @@ assert_contains "$OUT" \
 
 # --- Missing-base error -------------------------------------------------------
 
-# Runs from a temp src/ tree (no .env at its root) so the script's mandatory
-# source "$PROJECT_ROOT/.env" can't re-define TAMPERMONKEY_REPO_BASE_URLS.
-assert_missing_base_exits_1()
-{
-  local proj rc
-  proj="$(mktemp -d)"
-  mkdir -p "$proj/src/scripts" "$proj/src/lib"
-  cp "$REPO_ROOT/src/scripts/tampermonkey-install.sh" \
-    "$proj/src/scripts/"
-  cp "$REPO_ROOT/src/lib/common.sh" "$proj/src/lib/"
-  env -u TAMPERMONKEY_REPO_BASE_URLS \
-    bash "$proj/src/scripts/tampermonkey-install.sh" \
-    -d youtube.com -s video-speed >/dev/null 2>&1
-  rc=$?
-  rm -rf "$proj"
-  return "$rc"
-}
+# The fixture has no .env, so scrubbing the ambient variable leaves no base.
+assert_exit 1 "missing base with no -r exits 1" -- \
+  env -u TAMPERMONKEY_REPO_BASE_URLS bash "$TMI" -d youtube.com -s video-speed
 
-assert_exit 1 "missing base with no -r exits 1" \
-  -- assert_missing_base_exits_1
+rm -rf "$TMI_TMP"
 
 ################################################################################

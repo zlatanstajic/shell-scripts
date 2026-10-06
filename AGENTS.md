@@ -17,10 +17,9 @@ These instructions apply to every agent working in this repository.
   maintainer-only documentation generator.
 - [`src/lib/common.sh`](src/lib/common.sh) contains shared behavior. Reuse its
   helpers instead of duplicating logging, confirmation, dry-run, or exit logic.
-- [`src/completion/shell-scripts.bash`](src/completion/shell-scripts.bash) owns
-  Bash completion for installed command names.
-- [`install.sh`](install.sh) and [`uninstall.sh`](uninstall.sh) own symlink and
-  completion installation. Never edit a generated or local `deploy/` copy.
+- [`install.sh`](install.sh) and [`uninstall.sh`](uninstall.sh) own symlink
+  installation; `uninstall.sh` also removes the completion file older releases
+  installed. Never edit a generated or local `deploy/` copy.
 - [`tests/`](tests/) contains the zero-dependency Bash test harness. Shared
   library and installer tests live at its root; per-script tests belong in
   [`tests/scripts/`](tests/scripts/).
@@ -48,8 +47,8 @@ These instructions apply to every agent working in this repository.
   without it.
 - Keep configuration keys documented in [`.env.example`](.env.example), but
   never read, source, or write the repository's real `.env` file.
-- Adding or removing a user-facing script also requires updating Bash
-  completion and the installer/test expectations for the command list.
+- Adding or removing a user-facing script also requires updating the
+  installer/test expectations for the command list.
 
 ## Tests and verification
 

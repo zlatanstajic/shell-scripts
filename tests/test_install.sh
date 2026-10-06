@@ -6,7 +6,10 @@
 #               install into a temp prefix with symlink-target assertions, an
 #               EXECUTABLE bare-path invocation (the assertion that catches the
 #               exec-bit/resolution bug), idempotent re-run, uninstall cleanup,
-#               and a completion drift guard. Sourced by tests/run.sh.
+#               and uninstall's removal of a legacy completion file. Every
+#               install/uninstall run gets a temp HOME and a no-op xclip, so
+#               the suite never touches the developer's home or clipboard.
+#               Sourced by tests/run.sh.
 # Author      : Zlatan Stajic <contact@zlatanstajic.com>
 # License     : MIT
 ################################################################################
@@ -14,7 +17,6 @@
 INSTALL="$REPO_ROOT/install.sh"
 UNINSTALL="$REPO_ROOT/uninstall.sh"
 SCRIPTS_DIR="$REPO_ROOT/src/scripts"
-COMPLETION_FILE="$REPO_ROOT/src/completion/shell-scripts.bash"
 
 # gen-docs.sh is a maintainer tool and is intentionally NOT installed; the
 # user-facing set is every src/scripts/*.sh except gen-docs.sh.
@@ -73,9 +75,25 @@ assert_contains "$ASSERT_OUTPUT" "Running uninstall.sh" \
 # --- Install / idempotency / runtime ------------------------------------------
 
 TMP_PREFIX="$(mktemp -d)"
+TMP_HOME="$(mktemp -d)"
+STUB_DIR="$(mktemp -d)"
+LEGACY_DIR="$TMP_HOME/.local/share/bash-completion/completions"
+
+# A no-op xclip that drains stdin, so the bare-name generate-password run below
+# cannot overwrite the developer's clipboard.
+printf '#!/bin/sh\ncat > /dev/null\n' > "$STUB_DIR/xclip"
+chmod +x "$STUB_DIR/xclip"
+
+# sandboxed: run a command with HOME pointed at a temp dir, any ambient
+# BASH_COMPLETION_USER_DIR scrubbed and the stub dir first on PATH, so no
+# install/uninstall run can reach the developer's real home or clipboard.
+sandboxed()
+{
+  env -u BASH_COMPLETION_USER_DIR HOME="$TMP_HOME" PATH="$STUB_DIR:$PATH" "$@"
+}
 
 assert_exit 0 "install.sh installs into a temp prefix" -- \
-  bash "$INSTALL" --prefix "$TMP_PREFIX"
+  sandboxed bash "$INSTALL" --prefix "$TMP_PREFIX"
 
 # All 13 commands exist as symlinks resolving into src/scripts/.
 _src_real="$(readlink -f "$SCRIPTS_DIR")"
@@ -93,16 +111,25 @@ do
 done
 unset _name _target _src_real
 
+# install.sh ships no bash completion (bash already completes command names
+# from PATH), so it must not create the completion directory.
+if [ -e "$LEGACY_DIR" ]
+then
+  _fail "install.sh writes no completion file" "[$LEGACY_DIR] was created"
+else
+  _pass "install.sh writes no completion file"
+fi
+
 # The load-bearing assertion: invoke a command by its installed path AS AN
 # EXECUTABLE (NOT via bash) to catch the exec-bit/resolution failure.
 assert_exit 0 "bare-name generate-password runs as an executable" -- \
-  "$TMP_PREFIX/generate-password" -l 16
+  sandboxed "$TMP_PREFIX/generate-password" -l 16
 assert_match "$ASSERT_OUTPUT" '[^[:space:]]{16}' \
   "bare-name generate-password emits a 16-char password line"
 
 # Re-run install: idempotent, still exactly 13 symlinks, exit 0.
 assert_exit 0 "re-running install.sh is idempotent" -- \
-  bash "$INSTALL" --prefix "$TMP_PREFIX"
+  sandboxed bash "$INSTALL" --prefix "$TMP_PREFIX"
 
 _link_count=0
 for _name in "${EXPECTED_NAMES[@]}"
@@ -117,8 +144,14 @@ unset _name _link_count
 # A decoy regular file at a command name must survive uninstall.
 touch "$TMP_PREFIX/backup-decoy"
 
+# A completion file an older install.sh copied carries the shipped header
+# line; uninstall must remove it.
+mkdir -p "$LEGACY_DIR"
+printf '%s\n' "# File        : src/completion/shell-scripts.bash" \
+  > "$LEGACY_DIR/shell-scripts.bash"
+
 assert_exit 0 "uninstall.sh removes the installed links" -- \
-  bash "$UNINSTALL" --prefix "$TMP_PREFIX"
+  sandboxed bash "$UNINSTALL" --prefix "$TMP_PREFIX"
 
 _remaining=0
 for _name in "${EXPECTED_NAMES[@]}"
@@ -135,31 +168,28 @@ else
   _fail "uninstall leaves unrelated files untouched" "decoy was removed"
 fi
 
-rm -rf "$TMP_PREFIX"
-unset TMP_PREFIX
+if [ -e "$LEGACY_DIR/shell-scripts.bash" ]
+then
+  _fail "uninstall removes a legacy completion file" "file still present"
+else
+  _pass "uninstall removes a legacy completion file"
+fi
 
-# --- Completion drift guard ---------------------------------------------------
+# A same-named file without that header is not ours and must survive.
+printf 'complete -F _foreign foreign\n' > "$LEGACY_DIR/shell-scripts.bash"
 
-# The bash completion file must list exactly the 13 user-facing command names.
-# Extract the names from the _ssc_names assignment lines (strip the assignment
-# scaffolding and the self-referential $_ssc_names token).
-COMPLETION_LIST="$(
-  awk '/^_ssc_names=/{
-    gsub(/^_ssc_names="/, "");
-    gsub(/"$/, "");
-    gsub(/\$_ssc_names/, "");
-    print
-  }' "$COMPLETION_FILE" | tr "\n" " " | tr -s " "
-)"
-# Normalize to a sorted space-joined list for comparison.
-COMPLETION_SORTED="$(printf '%s\n' $COMPLETION_LIST | sort | tr "\n" " " | \
-  sed 's/ *$//')"
-EXPECTED_SORTED="$(printf '%s\n' "${EXPECTED_NAMES[@]}" | sort | \
-  tr "\n" " " | sed 's/ *$//')"
+assert_exit 0 "re-running uninstall.sh exits 0" -- \
+  sandboxed bash "$UNINSTALL" --prefix "$TMP_PREFIX"
 
-assert_eq "$EXPECTED_SORTED" "$COMPLETION_SORTED" \
-  "completion file lists exactly the 13 user-facing command names"
+if [ -f "$LEGACY_DIR/shell-scripts.bash" ]
+then
+  _pass "uninstall leaves a foreign shell-scripts.bash untouched"
+else
+  _fail "uninstall leaves a foreign shell-scripts.bash untouched" \
+    "foreign file was removed"
+fi
 
-unset COMPLETION_LIST COMPLETION_SORTED EXPECTED_SORTED
+rm -rf "$TMP_PREFIX" "$TMP_HOME" "$STUB_DIR"
+unset TMP_PREFIX TMP_HOME STUB_DIR LEGACY_DIR
 
 ################################################################################

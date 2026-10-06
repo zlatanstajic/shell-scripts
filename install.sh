@@ -26,9 +26,6 @@ set -u
 PREFIX="$HOME/.local/bin"
 
 SRC_DIR="$SCRIPT_DIR/src/scripts"
-COMPLETION_SRC="$SCRIPT_DIR/src/completion/shell-scripts.bash"
-_completion_default="$HOME/.local/share/bash-completion/completions"
-COMPLETION_DIR="${BASH_COMPLETION_USER_DIR:-$_completion_default}"
 
 # gen-docs.sh is a maintainer tool (it regenerates the docs reference and is
 # excluded from gen-docs.sh's own discovery); it is not a user-facing command,
@@ -163,36 +160,6 @@ CheckPath()
 }
 
 ################################################################################
-# Function    : InstallCompletion
-# Description : Copies the bash completion file into the user completion dir;
-#               informational only, never a hard failure
-# Parameters  : /
-################################################################################
-
-InstallCompletion()
-{
-  if [ ! -f "$COMPLETION_SRC" ]
-  then
-    LogWarn "Completion file $COMPLETION_SRC not found; skipping completion."
-    return
-  fi
-
-  if command -v complete >/dev/null 2>&1
-  then
-    mkdir -p "$COMPLETION_DIR"
-    cp "$COMPLETION_SRC" "$COMPLETION_DIR/shell-scripts.bash"
-    LogInfo "Installed completion to $COMPLETION_DIR/shell-scripts.bash"
-    LogInfo "Open a new shell or 'source' it to enable command completion."
-  else
-    LogWarn "bash completion not detected. To enable it manually, add:"
-    LogInfo ""
-    LogInfo "  source \"$COMPLETION_SRC\""
-    LogInfo ""
-    LogInfo "to your ~/.bashrc."
-  fi
-}
-
-################################################################################
 # Function    : Main
 # Description : Main entry point for the script
 # Parameters  : arguments
@@ -206,7 +173,6 @@ Main()
 
   LinkScripts
   CheckPath
-  InstallCompletion
 
   End 0
 }

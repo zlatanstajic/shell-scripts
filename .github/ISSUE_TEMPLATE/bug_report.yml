@@ -1,0 +1,103 @@
+name: Bug report
+description: A script does something other than what it documents.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report.
+
+        **Do not paste secrets.** Redact anything from your `.env`, any
+        password, and any token. If this is a security vulnerability, stop and
+        follow [SECURITY.md](https://github.com/zlatanstajic/shell-scripts/blob/master/SECURITY.md) instead — do not open
+        a public issue.
+
+  - type: dropdown
+    id: script
+    attributes:
+      label: Script
+      description: Which command is affected?
+      options:
+        - backup
+        - decrypt-env-files
+        - dev-setup
+        - generate-password
+        - git-copy
+        - hash-filenames
+        - my-scripts
+        - php-switch
+        - restore-vscode-folder
+        - shutdown-guard
+        - splice-images
+        - splice-videos
+        - tampermonkey-install
+        - install.sh / uninstall.sh
+        - gen-docs.sh (maintainer tool)
+        - shared library (src/lib/common.sh)
+        - other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command you ran
+      description: The exact invocation, with secrets redacted.
+      render: shell
+      placeholder: bash src/scripts/backup.sh -n
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: Include the output, with secrets redacted.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How are you running it?
+      options:
+        - Bare name on PATH (installed via install.sh)
+        - bash src/scripts/<script>.sh from a clone
+        - A copy under deploy/
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS and version
+      placeholder: Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: input
+    id: bash
+    attributes:
+      label: Bash version
+      description: Output of `bash --version` (first line).
+      placeholder: GNU bash, version 5.2.21(1)-release
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: >
+        Relevant `.env` keys by NAME only (never values), missing optional
+        tools, or anything else that might matter.
+    validations:
+      required: false
